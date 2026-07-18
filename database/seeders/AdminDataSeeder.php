@@ -15,9 +15,10 @@ class AdminDataSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
-            'name' => 'Super Admin',
+        User::updateOrCreate([
             'email' => 'admin@kelp.com',
+        ], [
+            'name' => 'Super Admin',
             'password' => Hash::make('12345'),
             'role' => 'admin',
         ]);

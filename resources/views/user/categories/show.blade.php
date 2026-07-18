@@ -530,6 +530,9 @@
                 @forelse($category->businesses as $index => $business)
                     @php
                         $avgRating = round($business->reviews->avg('rating') ?? 0);
+                        $thumbUrl = $business->logo
+                            ? (Str::startsWith($business->logo, ['http://', 'https://']) ? $business->logo : asset('storage/' . $business->logo))
+                            : 'https://via.placeholder.com/220x180/EDE9E2/C8C2B8?text=.';
                     @endphp
 
                     <div class="biz-card">
@@ -565,7 +568,7 @@
                         <!-- Thumbnail -->
                         <div class="biz-thumb-wrap">
                             <img
-                                src="{{ $business->logo ? asset('storage/' . $business->logo) : 'https://via.placeholder.com/220x180/EDE9E2/C8C2B8?text=.' }}"
+                                src="{{ $thumbUrl }}"
                                 class="biz-thumb"
                                 alt="{{ $business->name }}"
                             >

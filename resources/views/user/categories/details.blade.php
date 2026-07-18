@@ -600,6 +600,12 @@
     </style>
 </head>
 <body x-data="{ openReview: false }">
+    @php
+        $heroImage = $business->cover_image ?: $business->logo;
+        $heroImageUrl = $heroImage
+            ? (Str::startsWith($heroImage, ['http://', 'https://']) ? $heroImage : asset('storage/' . $heroImage))
+            : 'https://images.unsplash.com/photo-1517248135467-4c7ed9d42339?auto=format&fit=crop&w=1400';
+    @endphp
 
     <!-- ━━━ NAV ━━━ -->
     <nav class="site-nav">
@@ -641,7 +647,7 @@
     <!-- ━━━ HERO ━━━ -->
     <div class="hero">
         <img
-            src="{{ $business->logo ? asset('storage/' . $business->logo) : 'https://images.unsplash.com/photo-1517248135467-4c7ed9d42339?auto=format&fit=crop&w=1400' }}"
+            src="{{ $heroImageUrl }}"
             class="hero-img"
             alt="{{ $business->name }}"
         >
