@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\BusinessOwner\BusinessesController;
 use App\Http\Controllers\Agent\AgentLoginController;
 use App\Http\Controllers\Agent\AgentRegisterController;
+use App\Http\Controllers\Api\V1\KelpApp\KelpAuthController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAppController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
 
@@ -32,6 +33,14 @@ Route::post('/agent/registerBusiness',[AgentRegisterController::class,'registerB
 
 //USERS ROUTES kelp_app
 Route::prefix('v1')->group(function () {
+    Route::post('/auth/register', [KelpAuthController::class, 'register']);
+    Route::post('/auth/login', [KelpAuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/auth/me', [KelpAuthController::class, 'me']);
+        Route::post('/auth/logout', [KelpAuthController::class, 'logout']);
+    });
+
     Route::get('/home-feed', [KelpAppController::class, 'homeFeed']);
     Route::get('/services', [KelpAppController::class, 'services']);
     Route::get('/services/{category}/businesses', [KelpAppController::class, 'serviceBusinesses']);
