@@ -8,6 +8,7 @@ use App\Http\Controllers\Agent\AgentLoginController;
 use App\Http\Controllers\Agent\AgentRegisterController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAuthController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAppController;
+use App\Http\Controllers\Api\V1\KelpApp\KelpFavouriteController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
 
 
@@ -39,6 +40,9 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/auth/me', [KelpAuthController::class, 'me']);
         Route::post('/auth/logout', [KelpAuthController::class, 'logout']);
+        Route::get('/favourites', [KelpFavouriteController::class, 'index']);
+        Route::post('/favourites', [KelpFavouriteController::class, 'store']);
+        Route::delete('/favourites/{business}', [KelpFavouriteController::class, 'destroy']);
     });
 
     Route::get('/home-feed', [KelpAppController::class, 'homeFeed']);
