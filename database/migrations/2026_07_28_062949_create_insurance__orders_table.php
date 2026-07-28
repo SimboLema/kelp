@@ -14,7 +14,7 @@ return new class extends Migration
 
             $table->string('reference_no')->unique();
 
-            $table->foreignId('user_id')
+            $table->foreignUuid('user_id')
                 ->constrained()
                 ->cascadeOnDelete();
 
