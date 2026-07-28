@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\BusinessOwner\BusinessesController;
 use App\Http\Controllers\Agent\AgentLoginController;
 use App\Http\Controllers\Agent\AgentRegisterController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAuthController;
+use App\Http\Controllers\Api\V1\KelpApp\InsuranceOrderController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAppController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpFavouriteController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
@@ -43,6 +44,18 @@ Route::prefix('v1')->group(function () {
         Route::get('/favourites', [KelpFavouriteController::class, 'index']);
         Route::post('/favourites', [KelpFavouriteController::class, 'store']);
         Route::delete('/favourites/{business}', [KelpFavouriteController::class, 'destroy']);
+
+        //insurance
+        // Dropdowns
+        Route::get('/insurers', [InsuranceOrderController::class, 'insurers']);
+        Route::get('/insurances', [InsuranceOrderController::class, 'insurances']);
+        Route::get('/products/{insurance}', [InsuranceOrderController::class, 'products']);
+        Route::get('/coverages/{product}', [InsuranceOrderController::class, 'coverages']);
+
+        // Orders
+        Route::post('/insurance-orders', [InsuranceOrderController::class, 'store']);
+        Route::get('/insurance-orders', [InsuranceOrderController::class, 'myOrders']);
+        Route::get('/insurance-orders/{id}', [InsuranceOrderController::class, 'show']);
     });
 
     Route::get('/home-feed', [KelpAppController::class, 'homeFeed']);
