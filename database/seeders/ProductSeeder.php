@@ -3,8 +3,8 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Models\KMJ\Product;
-use App\Models\Models\KMJ\Insurance;
+use App\Models\Product;
+use App\Models\Insurance;
 
 class ProductSeeder extends Seeder
 {

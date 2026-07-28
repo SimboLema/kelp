@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Models\KMJ\Insurance;
+use App\Models\Insurance;
 
 class InsuranceSeeder extends Seeder
 {
