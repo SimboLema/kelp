@@ -31,6 +31,8 @@ return new class extends Migration
 
             $table->string('coverage_type')->nullable();
 
+            $table->string('sub_class')->nullable();
+
             $table->json('parameters')->nullable();
 
             $table->timestamps();
