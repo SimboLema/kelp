@@ -5,12 +5,14 @@ namespace App\Http\Controllers\Api\V1\KelpApp;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
-use App\Models\Models\KMJ\Insurance;
-use App\Models\Models\KMJ\Insurer;
-use App\Models\Models\KMJ\Product;
-use App\Models\Models\KMJ\Coverage;
-use App\Models\Models\KMJ\InsuranceOrder;
+use App\Models\Insurance;
+use App\Models\Insurer;
+use App\Models\Product;
+use App\Models\Coverage;
+use App\Models\InsuranceOrder;
 
 class InsuranceOrderController extends Controller
 {
@@ -99,6 +101,55 @@ class InsuranceOrderController extends Controller
             'status' => 'Pending',
             'transmission_status' => 'Pending',
         ]);
+
+        try {
+
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'X-Kelp-Secret' => env('SURETECH_SECRET'),
+                    'Accept' => 'application/json',
+                ])
+                ->post(env('SURETECH_URL') . '/api/kelp/insurance-orders', [
+        
+                    'reference_no' => $order->reference_no,
+        
+                    'customer_name' => optional($order->user)->name,
+                    'customer_phone' => optional($order->user)->phone_number,
+                    'customer_email' => optional($order->user)->email,
+        
+                    'insurance' => optional($order->insurance)->name,
+                    'product' => optional($order->product)->name,
+                    'coverage' => optional($order->coverage)->risk_name,
+        
+                    'description' => $order->description,
+        
+                    'created_at' => $order->created_at,
+                ]);
+        
+            if ($response->successful()) {
+        
+                $order->update([
+                    'transmission_status' => 'Sent',
+                ]);
+        
+            } else {
+        
+                Log::error('Suretech rejected insurance order.', [
+                    'reference' => $order->reference_no,
+                    'status' => $response->status(),
+                    'response' => $response->body(),
+                ]);
+        
+            }
+        
+        } catch (\Throwable $e) {
+        
+            Log::error('Failed to send insurance order to Suretech.', [
+                'reference' => $order->reference_no,
+                'message' => $e->getMessage(),
+            ]);
+        
+        }
 
         return response()->json([
             'success' => true,
