@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\KelpApp\InsuranceOrderController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAppController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpFavouriteController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
+use App\Http\Controllers\User\UserCategoriesController;
 
 
 Route::post('/admin/login', [AdminLoginController::class, 'login']);
@@ -56,6 +57,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/insurance-orders', [InsuranceOrderController::class, 'store']);
         Route::get('/insurance-orders', [InsuranceOrderController::class, 'myOrders']);
         Route::get('/insurance-orders/{id}', [InsuranceOrderController::class, 'show']);
+
+        // Reviews
+        Route::post('/businesses/{businessId}/reviews',[UserCategoriesController::class, 'storeReview']
+        );
     });
 
     Route::get('/home-feed', [KelpAppController::class, 'homeFeed']);
