@@ -58,9 +58,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/insurance-orders', [InsuranceOrderController::class, 'myOrders']);
         Route::get('/insurance-orders/{id}', [InsuranceOrderController::class, 'show']);
 
+        Route::post('kelp-app/premium/calculate', [InsuranceOrderController::class, 'calculatePremium']);
+
+        Route::post('kelp-app/motor/verify', [InsuranceOrderController::class, 'verifyMotor']);
+
         // Reviews
-        Route::post('/businesses/{businessId}/reviews',[UserCategoriesController::class, 'storeReview']
-        );
+        Route::post('/businesses/{businessId}/reviews',[UserCategoriesController::class, 'storeReview']);
     });
 
     Route::get('/home-feed', [KelpAppController::class, 'homeFeed']);

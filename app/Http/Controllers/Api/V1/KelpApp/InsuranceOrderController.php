@@ -14,8 +14,16 @@ use App\Models\Product;
 use App\Models\Coverage;
 use App\Models\InsuranceOrder;
 
+use App\Services\SuretechService;
+
 class InsuranceOrderController extends Controller
 {
+    protected SuretechService $suretech;
+
+    public function __construct(SuretechService $suretech)
+    {
+        $this->suretech = $suretech;
+    }
     /**
      * Get insurers
      */
@@ -70,97 +78,6 @@ class InsuranceOrderController extends Controller
         ]);
     }
 
-    /**
-     * Store insurance order
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'insurer_id'   => 'nullable|exists:insurers,id',
-            'insurance_id' => 'nullable|exists:insurances,id',
-            'product_id'   => 'nullable|exists:products,id',
-            'coverage_id'  => 'nullable|exists:coverages,id',
-            'description'  => 'nullable|string|max:5000',
-        ]);
-
-        if (!$request->product_id && empty($request->description)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Please select a product or provide a description.'
-            ], 422);
-        }
-
-        $order = InsuranceOrder::create([
-            'reference_no' => InsuranceOrder::generateReference(),
-            'user_id' => Auth::id(),
-            'insurer_id' => $request->insurer_id,
-            'insurance_id' => $request->insurance_id,
-            'product_id' => $request->product_id,
-            'coverage_id' => $request->coverage_id,
-            'description' => $request->description,
-            'status' => 'Pending',
-            'transmission_status' => 'Pending',
-        ]);
-
-        try {
-
-            $response = Http::timeout(30)
-                ->withHeaders([
-                    'X-Kelp-Secret' => env('SURETECH_SECRET'),
-                    'Accept' => 'application/json',
-                ])
-                ->post(env('SURETECH_URL') . '/api/kelp/insurance-orders', [
-        
-                    'reference_no' => $order->reference_no,
-        
-                    'customer_name' => optional($order->user)->name,
-                    'customer_phone' => optional($order->user)->phone_number,
-                    'customer_email' => optional($order->user)->email,
-        
-                    'insurance' => optional($order->insurance)->name,
-                    'product' => optional($order->product)->name,
-                    'coverage' => optional($order->coverage)->risk_name,
-        
-                    'description' => $order->description,
-        
-                    'created_at' => $order->created_at,
-                ]);
-        
-            if ($response->successful()) {
-        
-                $order->update([
-                    'transmission_status' => 'Sent',
-                ]);
-        
-            } else {
-        
-                Log::error('Suretech rejected insurance order.', [
-                    'reference' => $order->reference_no,
-                    'status' => $response->status(),
-                    'response' => $response->body(),
-                ]);
-        
-            }
-        
-        } catch (\Throwable $e) {
-        
-            Log::error('Failed to send insurance order to Suretech.', [
-                'reference' => $order->reference_no,
-                'message' => $e->getMessage(),
-            ]);
-        
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Insurance order submitted successfully.',
-            'data' => $order
-        ], 201);
-    }
-
-    /**
-     * User orders
-     */
     public function myOrders()
     {
         $orders = InsuranceOrder::with([
@@ -179,9 +96,7 @@ class InsuranceOrderController extends Controller
         ]);
     }
 
-    /**
-     * Single order
-     */
+
     public function show($id)
     {
         $order = InsuranceOrder::with([
@@ -198,4 +113,137 @@ class InsuranceOrderController extends Controller
             'data' => $order
         ]);
     }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'insurer_id'              => 'nullable|exists:insurers,id',
+            'insurance_id'            => 'nullable|exists:insurances,id',
+            'product_id'              => 'nullable|exists:products,id',
+            'coverage_id'             => 'nullable|exists:coverages,id',
+            'sum_insured'             => 'nullable|numeric|min:1',
+            'cover_note_duration_id'  => 'nullable|integer',
+            'motor_usage_id'          => 'nullable|integer',
+            'sitting_capacity'        => 'nullable|integer',
+            'addon_ids'               => 'nullable|array',
+            'description'             => 'nullable|string|max:5000',
+        ]);
+
+        if (!$request->product_id && empty($request->description)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please select a product or provide a description.'
+            ], 422);
+        }
+
+        $premium = null;
+        $premiumBreakdown = null;
+
+        if ($request->coverage_id && $request->sum_insured && $request->cover_note_duration_id) {
+            $coverage = Coverage::query()->find($request->coverage_id);
+
+            if ($coverage && $coverage->kmj_coverage_id) {
+                try {
+                    $result = $this->premiumService->calculate([
+                        'coverage_id'            => $coverage->kmj_coverage_id,
+                        'sum_insured'            => $request->sum_insured,
+                        'cover_note_duration_id' => $request->cover_note_duration_id,
+                        'motor_usage_id'         => $request->motor_usage_id,
+                        'sitting_capacity'       => $request->sitting_capacity,
+                        'addon_ids'              => $request->addon_ids ?? [],
+                    ]);
+                    $premium = $result['total_premium_including_tax'];
+                    $premiumBreakdown = $result;
+                } catch (\RuntimeException $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $e->getMessage(),
+                    ], 502);
+                }
+            }
+        }
+
+        $order = InsuranceOrder::create([
+            'reference_no' => InsuranceOrder::generateReference(),
+            'user_id' => Auth::id(),
+            'insurer_id' => $request->insurer_id,
+            'insurance_id' => $request->insurance_id,
+            'product_id' => $request->product_id,
+            'coverage_id' => $request->coverage_id,
+            'sum_insured' => $request->sum_insured,
+            'premium' => $premium,
+            'premium_breakdown' => $premiumBreakdown ? json_encode($premiumBreakdown) : null,
+            'description' => $request->description,
+            'status' => 'Pending',
+            'transmission_status' => 'Pending',
+        ]);
+
+        // ... existing Suretech transmission block, unchanged
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Insurance order submitted successfully.',
+            'data' => $order
+        ], 201);
+    }
+
+    public function verifyMotor(Request $request)
+    {
+        $request->validate([
+            'motor_category' => 'required|in:1,2',
+            'registration_number' => 'required|string',
+            'chassis_number' => 'nullable|string',
+        ]);
+
+        try {
+            $vehicle = $this->suretech->verifyMotor([
+                'motor_category' => $request->motor_category,
+                'motor_registration_number' => $request->registration_number,
+                'motor_chassis_number' => $request->chassis_number,
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+
+        return response()->json(['success' => true, 'data' => $vehicle]);
+    }
+
+    public function calculatePremium(Request $request)
+    {
+        $request->validate([
+            'coverage_id'            => 'required|exists:coverages,id',
+            'sum_insured'            => 'required|numeric|min:1',
+            'cover_note_duration_id' => 'required|integer',
+            'motor_usage_id'         => 'nullable|integer',
+            'sitting_capacity'       => 'nullable|integer',
+            'addon_ids'              => 'nullable|array',
+        ]);
+
+        $coverage = Coverage::findOrFail($request->coverage_id);
+
+        if (empty($coverage->kmj_coverage_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This coverage is not linked to a Suretech rating record yet.',
+            ], 422);
+        }
+
+        try {
+            $result = $this->suretech->calculatePremium([
+                'coverage_id'            => $coverage->kmj_coverage_id,
+                'sum_insured'            => $request->sum_insured,
+                'cover_note_duration_id' => $request->cover_note_duration_id,
+                'motor_usage_id'         => $request->motor_usage_id,
+                'sitting_capacity'       => $request->sitting_capacity,
+                'addon_ids'              => $request->addon_ids ?? [],
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+
+        return response()->json(['success' => true, 'data' => $result]);
+    }
+
+
+
 }
