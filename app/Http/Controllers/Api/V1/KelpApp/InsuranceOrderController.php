@@ -88,6 +88,20 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $motorCategories]);
     }
 
+    /**
+     * Get cover note durations — live from Suretech
+     */
+    public function coverNoteDurations()
+    {
+        try {
+            $durations = $this->suretech->getCoverNoteDurations();
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+
+        return response()->json(['success' => true, 'data' => $durations]);
+    }
+
     public function myOrders()
     {
         $orders = InsuranceOrder::where('user_id', Auth::id())

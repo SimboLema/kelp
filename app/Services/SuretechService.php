@@ -201,6 +201,14 @@ class SuretechService
     }
 
     /**
+     * @throws \RuntimeException
+     */
+    public function getCoverNoteDurations(): array
+    {
+        return $this->get('/api/kelp/cover-note-durations');
+    }
+
+    /**
      * Push an order to Suretech's IncomingInsuranceOrderController.
      * NOTE: this endpoint uses a different response envelope
      * ('success' / 'data' / 'error') than the other kelp endpoints
