@@ -18,7 +18,9 @@ class InsuranceOrderController extends Controller
         $this->suretech = $suretech;
     }
 
-
+    /**
+     * Get insurers — live from Suretech
+     */
     public function insurers()
     {
         try {
@@ -30,7 +32,9 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $insurers]);
     }
 
-
+    /**
+     * Get insurance types — live from Suretech
+     */
     public function insurances(Request $request)
     {
         try {
@@ -42,7 +46,9 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $insurances]);
     }
 
-
+    /**
+     * Get products by insurance — live from Suretech
+     */
     public function products($insuranceId)
     {
         try {
@@ -54,7 +60,9 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $products]);
     }
 
-    
+    /**
+     * Get coverages by product — live from Suretech
+     */
     public function coverages($productId)
     {
         try {
@@ -64,6 +72,20 @@ class InsuranceOrderController extends Controller
         }
 
         return response()->json(['success' => true, 'data' => $coverages]);
+    }
+
+    /**
+     * Get motor categories — live from Suretech
+     */
+    public function motorCategories()
+    {
+        try {
+            $motorCategories = $this->suretech->getMotorCategories();
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+
+        return response()->json(['success' => true, 'data' => $motorCategories]);
     }
 
     public function myOrders()

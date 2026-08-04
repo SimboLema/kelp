@@ -27,30 +27,31 @@ class SuretechService
 
     /**
      * Shared GET helper for catalog/reference-data endpoints.
+     * Matches KelpCatalogController's envelope: {success, data} / {success, message}.
      *
      * @throws \RuntimeException
      */
     protected function get(string $endpoint, array $query = []): array
-{
-    try {
-        $response = $this->client()->get($this->baseUrl . $endpoint, $query);
-        $data = $response->json();
+    {
+        try {
+            $response = $this->client()->get($this->baseUrl . $endpoint, $query);
+            $data = $response->json();
 
-        if ($response->failed() || !($data['success'] ?? false)) {
-            Log::error('Suretech request failed.', [
-                'endpoint' => $endpoint,
-                'query' => $query,
-                'response' => $data,
-            ]);
-            throw new \RuntimeException($data['message'] ?? 'Unable to fetch data from Suretech.');
+            if ($response->failed() || !($data['success'] ?? false)) {
+                Log::error('Suretech request failed.', [
+                    'endpoint' => $endpoint,
+                    'query' => $query,
+                    'response' => $data,
+                ]);
+                throw new \RuntimeException($data['message'] ?? 'Unable to fetch data from Suretech.');
+            }
+
+            return $data['data'];
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Suretech endpoint unreachable.', ['endpoint' => $endpoint, 'message' => $e->getMessage()]);
+            throw new \RuntimeException('Suretech service is unreachable. Please try again shortly.');
         }
-
-        return $data['data'];
-    } catch (\Illuminate\Http\Client\ConnectionException $e) {
-        Log::error('Suretech endpoint unreachable.', ['endpoint' => $endpoint, 'message' => $e->getMessage()]);
-        throw new \RuntimeException('Suretech service is unreachable. Please try again shortly.');
     }
-}
 
     /**
      * @throws \RuntimeException
@@ -189,6 +190,14 @@ class SuretechService
     public function getCoverages(int $productId): array
     {
         return $this->get('/api/kelp/coverages', ['product_id' => $productId]);
+    }
+
+    /**
+     * @throws \RuntimeException
+     */
+    public function getMotorCategories(): array
+    {
+        return $this->get('/api/kelp/motor-categories');
     }
 
     /**

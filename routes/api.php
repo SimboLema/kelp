@@ -52,6 +52,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/insurances', [InsuranceOrderController::class, 'insurances']);
         Route::get('/products/{insurance}', [InsuranceOrderController::class, 'products']);
         Route::get('/coverages/{product}', [InsuranceOrderController::class, 'coverages']);
+        Route::get('/motor-categories', [InsuranceOrderController::class, 'motorCategories']);
 
         // Orders — saved locally, then transmitted to Suretech (IncomingInsuranceOrderController)
         Route::post('/insurance-orders', [InsuranceOrderController::class, 'store']);
