@@ -859,9 +859,7 @@ nav {
 
             <!-- Desktop Navigation -->
             <div class="nav-main-links desktop">
-                <a href="#" class="nav-link">Write a Review</a>
-                <a href="#" class="nav-link">For Business</a>
-
+                
                 <div class="nav-divider"></div>
 
                 @foreach($categories->take(4) as $category)
@@ -890,11 +888,7 @@ nav {
                 @endif
             </div>
 
-            <!-- Right Side Actions -->
-            <div class="nav-auth-actions">
-                <button class="btn-login">Login</button>
-                <button class="btn-signup">Join Kelp</button>
-            </div>
+
         </div>
     </nav>
 

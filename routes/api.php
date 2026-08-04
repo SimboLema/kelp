@@ -47,19 +47,21 @@ Route::prefix('v1')->group(function () {
         Route::delete('/favourites/{business}', [KelpFavouriteController::class, 'destroy']);
 
         //insurance
-        // Dropdowns
+        // Dropdowns — live pass-through to Suretech (SuretechService::getInsurers/getInsuranceTypes/getProducts/getCoverages)
         Route::get('/insurers', [InsuranceOrderController::class, 'insurers']);
         Route::get('/insurances', [InsuranceOrderController::class, 'insurances']);
         Route::get('/products/{insurance}', [InsuranceOrderController::class, 'products']);
         Route::get('/coverages/{product}', [InsuranceOrderController::class, 'coverages']);
 
-        // Orders
+        // Orders — saved locally, then transmitted to Suretech (IncomingInsuranceOrderController)
         Route::post('/insurance-orders', [InsuranceOrderController::class, 'store']);
         Route::get('/insurance-orders', [InsuranceOrderController::class, 'myOrders']);
         Route::get('/insurance-orders/{id}', [InsuranceOrderController::class, 'show']);
 
+        // Premium calculation — live call to Suretech (premium-calculate)
         Route::post('kelp-app/premium/calculate', [InsuranceOrderController::class, 'calculatePremium']);
 
+        // Motor verification — live call to Suretech (motor-verify)
         Route::post('kelp-app/motor/verify', [InsuranceOrderController::class, 'verifyMotor']);
 
         // Reviews
