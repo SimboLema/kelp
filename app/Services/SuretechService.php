@@ -31,26 +31,26 @@ class SuretechService
      * @throws \RuntimeException
      */
     protected function get(string $endpoint, array $query = []): array
-    {
-        try {
-            $response = $this->client()->get($this->baseUrl . $endpoint, $query);
-            $data = $response->json();
+{
+    try {
+        $response = $this->client()->get($this->baseUrl . $endpoint, $query);
+        $data = $response->json();
 
-            if ($response->failed() || ($data['error_code'] ?? 1) !== 0) {
-                Log::error('Suretech request failed.', [
-                    'endpoint' => $endpoint,
-                    'query' => $query,
-                    'response' => $data,
-                ]);
-                throw new \RuntimeException($data['message'] ?? 'Unable to fetch data from Suretech.');
-            }
-
-            return $data['data'];
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('Suretech endpoint unreachable.', ['endpoint' => $endpoint, 'message' => $e->getMessage()]);
-            throw new \RuntimeException('Suretech service is unreachable. Please try again shortly.');
+        if ($response->failed() || !($data['success'] ?? false)) {
+            Log::error('Suretech request failed.', [
+                'endpoint' => $endpoint,
+                'query' => $query,
+                'response' => $data,
+            ]);
+            throw new \RuntimeException($data['message'] ?? 'Unable to fetch data from Suretech.');
         }
+
+        return $data['data'];
+    } catch (\Illuminate\Http\Client\ConnectionException $e) {
+        Log::error('Suretech endpoint unreachable.', ['endpoint' => $endpoint, 'message' => $e->getMessage()]);
+        throw new \RuntimeException('Suretech service is unreachable. Please try again shortly.');
     }
+}
 
     /**
      * @throws \RuntimeException
