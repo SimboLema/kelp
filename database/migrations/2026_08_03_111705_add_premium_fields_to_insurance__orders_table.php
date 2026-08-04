@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('insurance__orders', function (Blueprint $table) {
+        Schema::table('insurance_orders', function (Blueprint $table) {
             $table->decimal('sum_insured', 15, 2)->nullable()->after('coverage_id');
             $table->decimal('premium', 15, 2)->nullable()->after('sum_insured');
             $table->json('premium_breakdown')->nullable()->after('premium');
