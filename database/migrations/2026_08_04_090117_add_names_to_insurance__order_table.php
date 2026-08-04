@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('insurance__orders', function (Blueprint $table) {
+        Schema::table('insurance_orders', function (Blueprint $table) {
             $table->string('insurer_name')->nullable()->after('insurer_id');
             $table->string('insurance_name')->nullable()->after('insurance_id');
             $table->string('product_name')->nullable()->after('product_id');
