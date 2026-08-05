@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AdminLoginController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\BusinessOwner\BusinessesController;
 use App\Http\Controllers\Agent\AgentLoginController;
+use App\Http\Controllers\Agent\AgentDashboardController;
 use App\Http\Controllers\Agent\AgentRegisterController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAuthController;
 use App\Http\Controllers\Api\V1\KelpApp\InsuranceOrderController;
@@ -32,6 +33,7 @@ Route::get('/admin/businesses', [BusinessesController::class, 'listByStatus']);
 Route::post('/agent/login',[AgentLoginController::class,'login'])->name('agent.login');
 Route::post('/agent/registerBusiness',[AgentRegisterController::class,'registerBusiness'])->name('agent.registerBusiness');
 Route::get('/categories', [AgentRegisterController::class, 'categories']);
+Route::get('/agent/dashboard', [AgentDashboardController::class, 'index']);
 
 
 //USERS ROUTES kelp_app
@@ -66,7 +68,7 @@ Route::prefix('v1')->group(function () {
         // Motor verification — live call to Suretech (motor-verify)
         Route::post('kelp-app/motor/verify', [InsuranceOrderController::class, 'verifyMotor']);
 
-        //initiate payment 
+        //initiate payment
         Route::post(
             '/payments/initiate',
             [PaymentController::class, 'initiate'],
