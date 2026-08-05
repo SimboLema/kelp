@@ -31,7 +31,7 @@ Route::get('/admin/businesses', [BusinessesController::class, 'listByStatus']);
 //AGENT ROUTES
 Route::post('/agent/login',[AgentLoginController::class,'login'])->name('agent.login');
 Route::post('/agent/registerBusiness',[AgentRegisterController::class,'registerBusiness'])->name('agent.registerBusiness');
-
+Route::get('/categories', [AgentRegisterController::class, 'categories']);
 
 
 //USERS ROUTES kelp_app

@@ -9,10 +9,19 @@ use Illuminate\Support\Str;
 use App\Models\User;
 use App\Models\Business;
 use App\Models\BusinessImage;
+use App\Models\Category;
 use Illuminate\Support\Facades\DB;
 
 class AgentRegisterController extends Controller
 {
+    public function categories()
+{
+    $categories = Category::select('id', 'name')->orderBy('name')->get();
+
+    return response()->json([
+        'categories' => $categories,
+    ]);
+}
     public function registerBusiness(Request $request)
     {
         $request->validate([
@@ -113,5 +122,5 @@ class AgentRegisterController extends Controller
         }
     }
 
-   
+
 }

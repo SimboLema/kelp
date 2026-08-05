@@ -10,9 +10,14 @@ use Illuminate\Support\Facades\Hash;
 
 class AdminAgentController extends Controller
 {
-    public function index(){
-        return view('admin.agents.index');
-    }
+    public function index()
+{
+    $agents = User::query()->where('role', 'agent')
+        ->latest()
+        ->paginate(10);
+
+    return view('admin.agents.index', compact('agents'));
+}
 
     public function create(Request $request){
         $credentials = Validator::make($request->all(),[
