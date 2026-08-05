@@ -12,7 +12,7 @@ use App\Http\Controllers\Api\V1\KelpApp\KelpAppController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpFavouriteController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
 use App\Http\Controllers\User\UserCategoriesController;
-
+use App\Http\Controllers\Api\V1\KelpApp\PaymentController;
 
 Route::post('/admin/login', [AdminLoginController::class, 'login']);
 Route::post('/business/login', [BusinessOwnerLoginController::class, 'login']);
@@ -65,6 +65,12 @@ Route::prefix('v1')->group(function () {
 
         // Motor verification — live call to Suretech (motor-verify)
         Route::post('kelp-app/motor/verify', [InsuranceOrderController::class, 'verifyMotor']);
+
+        //initiate payment 
+        Route::post(
+            '/payments/initiate',
+            [PaymentController::class, 'initiate'],
+        );
 
         // Reviews
         Route::post('/businesses/{businessId}/reviews',[UserCategoriesController::class, 'storeReview']);
