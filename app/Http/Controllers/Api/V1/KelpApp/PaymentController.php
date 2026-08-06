@@ -65,4 +65,36 @@ class PaymentController extends Controller
             ], 502);
         }
     }
+
+    public function status(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'order_id' => [
+                'required',
+                'string',
+                'max:100',
+            ],
+        ]);
+
+        try {
+            $result = $this->paymentService->checkPaymentStatus(
+                $validated['order_id'],
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => $result['message']
+                    ?? 'Payment status retrieved successfully.',
+                'data' => [
+                    'order_id' => $validated['order_id'],
+                    'gateway_response' => $result,
+                ],
+            ]);
+        } catch (RuntimeException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 502);
+        }
+    }
 }

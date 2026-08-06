@@ -74,6 +74,12 @@ Route::prefix('v1')->group(function () {
             [PaymentController::class, 'initiate'],
         );
 
+
+        Route::post(
+            '/payments/status',
+            [PaymentController::class, 'status'],
+        );
+
         // Reviews
         Route::post('/businesses/{businessId}/reviews',[UserCategoriesController::class, 'storeReview']);
     });

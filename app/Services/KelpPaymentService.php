@@ -132,4 +132,38 @@ class KelpPaymentService
 
         return $response->json();
     }
+    public function checkPaymentStatus(string $orderId): array
+    {
+        $token = $this->requestToken();
+
+        $response = $this->client()
+            ->withToken($token)
+            ->withHeaders([
+                'X-Email' => $this->email,
+            ])
+            ->post(
+                $this->baseUrl .
+                    '/api/pgway/services/v1/payment/status/request',
+                [
+                    'orderId' => $orderId,
+                ],
+            );
+
+        if ($response->failed()) {
+            throw new RuntimeException(
+                $response->json('message')
+                    ?? 'Unable to check payment status.',
+            );
+        }
+
+        $result = $response->json();
+
+        if (!is_array($result)) {
+            throw new RuntimeException(
+                'Invalid payment status response.',
+            );
+        }
+
+        return $result;
+    }
 }
