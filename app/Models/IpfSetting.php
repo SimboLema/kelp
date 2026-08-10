@@ -24,4 +24,9 @@ class IpfSetting extends Model
     {
         return static::latest()->firstOrFail();
     }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'updated_by');
+    }
 }

@@ -10,6 +10,8 @@ use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerReviewController;
 use App\Http\Controllers\User\UserCategoriesController;
 use App\Http\Controllers\User\UserDashboardController;
+use App\Http\Controllers\Admin\AdminIpfPlanController;
+use App\Http\Controllers\Admin\IpfSettingsController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/',[UserDashboardController::class,'index']);
@@ -28,7 +30,28 @@ Route::get('/user/business/{business}', [UserCategoriesController::class, 'detai
 
 Route::post('/business/{id}/review', [UserCategoriesController::class, 'storeReview'])->name('reviews.store');
 
+Route::get('/ipf/settings', [IpfSettingsController::class, 'current']);
+Route::get('/ipf/settings/history', [IpfSettingsController::class, 'history']);
+Route::post('/ipf/settings', [IpfSettingsController::class, 'update']);
 
+Route::get('/ipf/plans', [AdminIpfPlanController::class, 'index'])->name('admin.ipf');
+Route::get('/ipf/plans/summary', [AdminIpfPlanController::class, 'summary']);
+Route::get('/ipf/plans/{id}', [AdminIpfPlanController::class, 'show']);
+
+Route::post('/ipf/plans/{id}/payments', [
+    AdminIpfPlanController::class,
+    'recordPayment'
+]);
+
+Route::post('/ipf/plans/{planId}/transactions/{transactionId}/waive', [
+    AdminIpfPlanController::class,
+    'waivePenalty'
+]);
+
+Route::post('/ipf/plans/{id}/default', [
+    AdminIpfPlanController::class,
+    'markDefaulted'
+]);
 
 
 // The route your controller is looking for
