@@ -208,6 +208,28 @@ class SuretechService
         return $this->get('/api/kelp/cover-note-durations');
     }
 
+    public function getCountries(){
+        return $this->get('/api/kelp/countries');
+    }
+        public function getRegions(): array
+    {
+        return $this->get('/api/kelp/regions');
+    }
+
+    public function getDistricts(int $regionId): array
+    {
+        return $this->get('/api/kelp/districts', ['region_id' => $regionId]);
+    }
+
+    public function getPolicyHolderTypes(): array
+    {
+        return $this->get('/api/kelp/policy-holder-types');
+    }
+
+    public function getPolicyHolderIdTypes(): array
+    {
+        return $this->get('/api/kelp/policy-holder-id-types');
+    }
     /**
      * Push an order to Suretech's IncomingInsuranceOrderController.
      * NOTE: this endpoint uses a different response envelope

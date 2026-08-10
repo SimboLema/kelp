@@ -7,20 +7,23 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 use App\Models\InsuranceOrder;
+use App\Models\IpfPlan;
 use App\Services\SuretechService;
+use App\Services\IpfService;
 
 class InsuranceOrderController extends Controller
 {
     protected SuretechService $suretech;
+    protected IpfService $ipf;
 
-    public function __construct(SuretechService $suretech)
+    public function __construct(SuretechService $suretech, IpfService $ipf)
     {
         $this->suretech = $suretech;
+        $this->ipf = $ipf;
     }
 
-    /**
-     * Get insurers — live from Suretech
-     */
+    // ---- Catalog passthroughs (all live on Suretech already) ----
+
     public function insurers()
     {
         try {
@@ -28,13 +31,9 @@ class InsuranceOrderController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
         }
-
         return response()->json(['success' => true, 'data' => $insurers]);
     }
 
-    /**
-     * Get insurance types — live from Suretech
-     */
     public function insurances(Request $request)
     {
         try {
@@ -42,13 +41,9 @@ class InsuranceOrderController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
         }
-
         return response()->json(['success' => true, 'data' => $insurances]);
     }
 
-    /**
-     * Get products by insurance — live from Suretech
-     */
     public function products($insuranceId)
     {
         try {
@@ -56,13 +51,9 @@ class InsuranceOrderController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
         }
-
         return response()->json(['success' => true, 'data' => $products]);
     }
 
-    /**
-     * Get coverages by product — live from Suretech
-     */
     public function coverages($productId)
     {
         try {
@@ -70,13 +61,9 @@ class InsuranceOrderController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
         }
-
         return response()->json(['success' => true, 'data' => $coverages]);
     }
 
-    /**
-     * Get motor categories — live from Suretech
-     */
     public function motorCategories()
     {
         try {
@@ -84,13 +71,9 @@ class InsuranceOrderController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
         }
-
         return response()->json(['success' => true, 'data' => $motorCategories]);
     }
 
-    /**
-     * Get cover note durations — live from Suretech
-     */
     public function coverNoteDurations()
     {
         try {
@@ -98,108 +81,221 @@ class InsuranceOrderController extends Controller
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
         }
-
         return response()->json(['success' => true, 'data' => $durations]);
     }
 
+    public function countries()
+    {
+        try {
+            $countries = $this->suretech->getCountries();
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+        return response()->json(['success' => true, 'data' => $countries]);
+    }
+
+    public function regions()
+    {
+        try {
+            $regions = $this->suretech->getRegions();
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+        return response()->json(['success' => true, 'data' => $regions]);
+    }
+
+    public function districts($regionId)
+    {
+        try {
+            $districts = $this->suretech->getDistricts((int) $regionId);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+        return response()->json(['success' => true, 'data' => $districts]);
+    }
+
+    public function policyHolderTypes()
+    {
+        try {
+            $types = $this->suretech->getPolicyHolderTypes();
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+        return response()->json(['success' => true, 'data' => $types]);
+    }
+
+    public function policyHolderIdTypes()
+    {
+        try {
+            $types = $this->suretech->getPolicyHolderIdTypes();
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+        return response()->json(['success' => true, 'data' => $types]);
+    }
+
+    // ---- Orders ----
+
     public function myOrders()
     {
-        $orders = InsuranceOrder::where('user_id', Auth::id())
-            ->latest()
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $orders
-        ]);
+        $orders = InsuranceOrder::query()->where('user_id', Auth::id())->latest()->get();
+        return response()->json(['success' => true, 'data' => $orders]);
     }
 
     public function show($id)
     {
-        $order = InsuranceOrder::where('user_id', Auth::id())
+        $order = InsuranceOrder::query()->where('user_id', Auth::id())
+            ->with('ipfPlan.transactions')
             ->findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'data' => $order
-        ]);
+        return response()->json(['success' => true, 'data' => $order]);
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'insurer_id'              => 'nullable|integer',
-            'insurance_id'            => 'nullable|integer',
-            'product_id'              => 'nullable|integer',
-            'coverage_id'             => 'nullable|integer',
-            'insurer_name'            => 'nullable|string|max:255',
-            'insurance_name'          => 'nullable|string|max:255',
-            'product_name'            => 'nullable|string|max:255',
-            'coverage_name'           => 'nullable|string|max:255',
-            'sum_insured'             => 'nullable|numeric|min:1',
-            'cover_note_duration_id'  => 'nullable|integer',
-            'motor_usage_id'          => 'nullable|integer',
-            'sitting_capacity'        => 'nullable|integer',
-            'addon_ids'               => 'nullable|array',
-            'description'             => 'nullable|string|max:5000',
+            'coverage_id'             => 'required|integer',
+            'sum_insured'             => 'required|numeric|min:1',
+            'cover_note_duration_id'  => 'required|integer',
+            'cover_note_start_date'   => 'required|date',
+            'cover_note_end_date'     => 'required|date|after:cover_note_start_date',
+
+            'customer.dob'                   => 'required|date',
+            'customer.policy_holder_type_id' => 'required|integer',
+            'customer.id_number'             => 'required|string',
+            'customer.id_type_id'            => 'required|integer',
+            'customer.gender'                => 'required|in:M,F',
+            'customer.country_id'            => 'required|integer',
+            'customer.region_id'             => 'required|integer',
+            'customer.district_id'           => 'required|integer',
+            'customer.street'                => 'nullable|string',
+            'customer.postal_address'        => 'required|string',
+            'customer.fax'                   => 'nullable|string',
+
+            'motor_category'       => 'required|in:1,2',
+            'registration_number'  => 'required|string',
+            'chassis_number'       => 'nullable|string',
+            'motor_usage_id'       => 'required|integer',
+            'owner_category_id'    => 'required|integer',
+            'motor_type_id'        => 'required|integer',
+            'sitting_capacity'     => 'nullable|integer',
+
+            'payment_mode' => 'required|in:cash,ipf',
+
+            'insurer_name'    => 'nullable|string|max:255',
+            'insurance_name'  => 'nullable|string|max:255',
+            'product_name'    => 'nullable|string|max:255',
+            'coverage_name'   => 'nullable|string|max:255',
+            'addon_ids'       => 'nullable|array',
         ]);
 
-        if (!$request->product_id && empty($request->description)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Please select a product or provide a description.'
-            ], 422);
+        // 1. Verify vehicle against TIRA (never trust client-cached data)
+        try {
+            $vehicle = $this->suretech->verifyMotor([
+                'motor_category' => $request->motor_category,
+                'motor_registration_number' => $request->registration_number,
+                'motor_chassis_number' => $request->chassis_number,
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => 'Vehicle verification failed: ' . $e->getMessage()], 502);
         }
 
-        $premium = null;
-        $premiumBreakdown = null;
+        // 2. Calculate premium
+        // NOTE: Suretech's /api/kelp/premium-calculate currently has a bug on the
+        // motor path (motorPremiumCalculation() is typed to accept a Request but
+        // is called with scalars, throwing a TypeError that gets swallowed into a
+        // generic "Unable to calculate premium." message). Since Suretech can't be
+        // modified here, that failure will surface as a 502 below until it's fixed
+        // on that side — this is not something Kelp can work around.
+        try {
+            $premiumResult = $this->suretech->calculatePremium([
+                'coverage_id'            => $request->coverage_id,
+                'sum_insured'            => $request->sum_insured,
+                'cover_note_duration_id' => $request->cover_note_duration_id,
+                'motor_usage_id'         => $request->motor_usage_id,
+                'sitting_capacity'       => $request->sitting_capacity,
+                'addon_ids'              => $request->addon_ids ?? [],
+            ]);
+            $totalPremium = $premiumResult['total_premium_including_tax'];
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => 'Premium calculation failed: ' . $e->getMessage()], 502);
+        }
 
-        if ($request->coverage_id && $request->sum_insured && $request->cover_note_duration_id) {
+        // 3. Save the full order locally — Kelp is the source of truth for
+        // customer KYC and motor detail, since Suretech's live endpoint can't
+        // accept or store them.
+        $order = InsuranceOrder::create([
+            'reference_no'        => InsuranceOrder::generateReference(),
+            'user_id'             => Auth::id(),
+            'coverage_id'         => $request->coverage_id,
+            'insurer_name'        => $request->insurer_name,
+            'insurance_name'      => $request->insurance_name,
+            'product_name'        => $request->product_name,
+            'coverage_name'       => $request->coverage_name,
+            'sum_insured'         => $request->sum_insured,
+            'premium'             => $totalPremium,
+            'premium_breakdown'   => json_encode($premiumResult),
+            'customer_details'    => json_encode($request->input('customer')),
+            'motor_details'       => json_encode($vehicle),
+            'cover_note_start_date' => $request->cover_note_start_date,
+            'cover_note_end_date'   => $request->cover_note_end_date,
+            'payment_mode'        => $request->payment_mode,
+            'registration_number' => $vehicle['registration_number'],
+            'status'              => 'Pending',
+            'transmission_status' => 'Pending',
+        ]);
+
+        // 4. Create the IPF plan (Kelp-owned, entirely) if applicable
+        $ipfPlan = null;
+        if ($request->payment_mode === 'ipf') {
             try {
-                $result = $this->suretech->calculatePremium([
-                    'coverage_id'            => $request->coverage_id, // Suretech's own ID, passed straight through
-                    'sum_insured'            => $request->sum_insured,
-                    'cover_note_duration_id' => $request->cover_note_duration_id,
-                    'motor_usage_id'         => $request->motor_usage_id,
-                    'sitting_capacity'       => $request->sitting_capacity,
-                    'addon_ids'              => $request->addon_ids ?? [],
-                ]);
-                $premium = $result['total_premium_including_tax'];
-                $premiumBreakdown = $result;
+                $ipfPlan = $this->ipf->createPlan($order, $totalPremium);
             } catch (\RuntimeException $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                ], 502);
+                // Order stays saved even if IPF setup fails — don't lose the order over this.
+                $order->update(['status' => 'IPF setup failed: ' . $e->getMessage()]);
             }
         }
 
-        $order = InsuranceOrder::create([
-            'reference_no'         => InsuranceOrder::generateReference(),
-            'user_id'              => Auth::id(),
-            'insurer_id'           => $request->insurer_id,
-            'insurance_id'         => $request->insurance_id,
-            'product_id'           => $request->product_id,
-            'coverage_id'          => $request->coverage_id,
-            // Denormalized labels — since insurer_id/insurance_id/product_id/coverage_id
-            // now reference Suretech's own IDs (no local table to join against),
-            // store the human-readable names at creation time so order history
-            // and lists stay fast without re-fetching from Suretech.
-            'insurer_name'         => $request->insurer_name,
-            'insurance_name'       => $request->insurance_name,
-            'product_name'         => $request->product_name,
-            'coverage_name'        => $request->coverage_name,
-            'sum_insured'          => $request->sum_insured,
-            'premium'              => $premium,
-            'premium_breakdown'    => $premiumBreakdown ? json_encode($premiumBreakdown) : null,
-            'description'          => $request->description,
-            'status'               => 'Pending',
-            'transmission_status'  => 'Pending',
-        ]);
+        // 5. Transmit to Suretech using ONLY the fields its live endpoint accepts.
+        // Everything else (KYC, motor detail, IPF summary) is packed into
+        // `description` as a readable block, since that's the only free-text
+        // field available to carry extra context to whoever reviews the order
+        // on the Suretech side.
+        $descriptionParts = [
+            "Order Reference: {$order->reference_no}",
+            "Payment Mode: " . strtoupper($request->payment_mode),
+        ];
 
-        // Transmit to Suretech's IncomingInsuranceOrderController (POST /api/kelp/orders)
-        // Suretech stores insurance/product/coverage as plain strings, not foreign keys,
-        // so the *_name fields below are exactly what it expects.
+        if ($ipfPlan) {
+            $descriptionParts[] = sprintf(
+                "IPF Plan — Total: %s, Down payment (%.2f%%): %s, Financed: %s, Daily installment: %s",
+                number_format($totalPremium, 2),
+                $ipfPlan->down_payment_percent,
+                number_format($ipfPlan->down_payment_amount, 2),
+                number_format($ipfPlan->financed_amount, 2),
+                number_format($ipfPlan->daily_installment, 2)
+            );
+        }
+
+        $descriptionParts[] = "Cover Note Period: {$request->cover_note_start_date} to {$request->cover_note_end_date}";
+        $descriptionParts[] = "Sum Insured: " . number_format($request->sum_insured, 2);
+        $descriptionParts[] = "Total Premium: " . number_format($totalPremium, 2);
+
+        $descriptionParts[] = "--- Customer ---";
+        $descriptionParts[] = "DOB: {$request->input('customer.dob')}";
+        $descriptionParts[] = "ID Type/Number: {$request->input('customer.id_type_id')} / {$request->input('customer.id_number')}";
+        $descriptionParts[] = "Gender: {$request->input('customer.gender')}";
+        $descriptionParts[] = "District/Region/Country IDs: {$request->input('customer.district_id')} / {$request->input('customer.region_id')} / {$request->input('customer.country_id')}";
+        $descriptionParts[] = "Street: {$request->input('customer.street')}";
+        $descriptionParts[] = "Postal Address: {$request->input('customer.postal_address')}";
+
+        $descriptionParts[] = "--- Vehicle ---";
+        $descriptionParts[] = "Reg No: {$vehicle['registration_number']}, Chassis: {$vehicle['chassis_number']}";
+        $descriptionParts[] = "{$vehicle['make']} {$vehicle['model']} ({$vehicle['year_of_manufacture']}), {$vehicle['color']}, {$vehicle['body_type']}";
+        $descriptionParts[] = "Engine: {$vehicle['engine_number']} ({$vehicle['engine_capacity']}cc, {$vehicle['fuel_used']})";
+
+        $fullDescription = implode("\n", $descriptionParts);
+
         try {
             $this->suretech->submitOrder([
                 'reference_no'   => $order->reference_no,
@@ -209,19 +305,24 @@ class InsuranceOrderController extends Controller
                 'insurance'      => $request->insurance_name,
                 'product'        => $request->product_name,
                 'coverage'       => $request->coverage_name,
-                'description'    => $request->description,
+                'description'    => $fullDescription,
                 'created_at'     => $order->created_at,
             ]);
             $order->update(['transmission_status' => 'Sent']);
         } catch (\RuntimeException $e) {
             $order->update(['transmission_status' => 'Failed']);
-            // Order stays saved locally even if transmission fails — don't block the response on it.
+            // Order and IPF plan stay saved locally regardless — Kelp never loses
+            // an order over a downstream transmission failure.
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Insurance order submitted successfully.',
-            'data' => $order
+            'message' => 'Insurance order submitted successfully.'
+                . ($request->payment_mode === 'ipf' ? ' IPF plan created.' : ''),
+            'data' => [
+                'order'    => $order,
+                'ipf_plan' => $ipfPlan,
+            ],
         ], 201);
     }
 
@@ -271,5 +372,40 @@ class InsuranceOrderController extends Controller
         }
 
         return response()->json(['success' => true, 'data' => $result]);
+    }
+
+    // ---- IPF payments ----
+
+    public function recordIpfPayment(Request $request, $orderId)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'note'   => 'nullable|string|max:255',
+        ]);
+
+        $order = InsuranceOrder::query()->where('user_id', Auth::id())->findOrFail($orderId);
+        $plan = IpfPlan::query()->where('insurance_order_id', $order->id)->firstOrFail();
+
+        try {
+            $transaction = $this->ipf->recordPayment($plan, $request->amount, $request->note);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'transaction' => $transaction,
+                'plan' => $plan->fresh(),
+            ],
+        ]);
+    }
+
+    public function ipfPlan($orderId)
+    {
+        $order = InsuranceOrder::query()->where('user_id', Auth::id())->findOrFail($orderId);
+        $plan = IpfPlan::with('transactions')->where('insurance_order_id', $order->id)->firstOrFail();
+
+        return response()->json(['success' => true, 'data' => $plan]);
     }
 }
