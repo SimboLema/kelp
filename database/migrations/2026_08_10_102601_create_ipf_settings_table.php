@@ -13,7 +13,12 @@ return new class extends Migration
             $table->decimal('down_payment_percent', 5, 2);
             $table->decimal('daily_rate_percent', 5, 2);
             $table->decimal('penalty_percent', 5, 2);
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->uuid('updated_by')->nullable();
+
+            $table->foreign('updated_by')
+                ->references('id')
+                ->on('users')
+                ->nullOnDelete();
             $table->timestamps();
         });
     }
