@@ -75,90 +75,83 @@
 
 @push('scripts')
 <script>
-    document.getElementById('categoryForm').addEventListener('submit', function(e) {
+document.addEventListener('DOMContentLoaded', function () {
+
+    const form = document.getElementById('categoryForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const nameInput = document.getElementById('name');
+    const nameError = document.getElementById('nameError');
+
+    if (!form) {
+        console.error('Category form not found.');
+        return;
+    }
+
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
-        const nameInput = document.getElementById('name');
-        const nameError = document.getElementById('nameError');
-        const submitBtn = document.getElementById('submitBtn');
-        const bodyComponent = document.querySelector('body').__x.$data;
-
+        // Clear previous error
+        nameError.textContent = '';
         nameError.classList.add('hidden');
-        nameError.innerText = '';
 
+        const name = nameInput.value.trim();
+
+        if (!name) {
+            nameError.textContent = 'Category name is required.';
+            nameError.classList.remove('hidden');
+            return;
+        }
+
+        // Disable button
         submitBtn.disabled = true;
-        submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+        submitBtn.innerHTML = 'Saving...';
 
-        axios.post("{{ route('admin.categories.store') }}", {
-            name: nameInput.value
-        })
-        .then(function(response) {
-            bodyComponent.showNotification(response.data.message || 'Category saved successfully!');
-            nameInput.value = '';
+        try {
 
-            const emptyRow = document.getElementById('emptyRow');
-            if (emptyRow) emptyRow.remove();
+            const formData = new FormData(form);
 
-            const newCategory = response.data.category;
-            const tableBody = document.getElementById('categoryTableBody');
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector(
+                        'meta[name="csrf-token"]'
+                    ).getAttribute('content'),
 
-            const newRowHtml = `
-                <tr id="category-row-${newCategory.id}" class="hover:bg-slate-50 transition-colors opacity-0 duration-300">
-                    <td class="px-8 py-5">
-                        <span class="text-sm font-bold text-slate-700">${newCategory.name}</span>
-                    </td>
-                    <td class="px-8 py-5 text-xs text-slate-400 font-medium">
-                        ${response.data.created_at || 'Just now'}
-                    </td>
-                    <td class="px-8 py-5 text-right">
-                        <button onclick="deleteCategory(${newCategory.id})" class="text-rose-500 hover:bg-rose-50 p-2 rounded-lg transition-colors" title="Delete Category">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
-                        </button>
-                    </td>
-                </tr>
-            `;
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
 
-            tableBody.insertAdjacentHTML('afterbegin', newRowHtml);
+            const data = await response.json();
 
-            setTimeout(() => {
-                const insertedRow = document.getElementById(`category-row-${newCategory.id}`);
-                if(insertedRow) insertedRow.classList.remove('opacity-0');
-            }, 50);
-        })
-        .catch(function(error) {
-            if (error.response && error.response.status === 422) {
-                const errors = error.response.data.errors;
-                if (errors.name) {
-                    nameError.innerText = errors.name[0];
-                    nameError.classList.remove('hidden');
-                }
-            } else {
-                bodyComponent.showNotification('Failed to create category.', 'error');
+            if (!response.ok) {
+                throw new Error(data.message || 'Failed to create category.');
             }
-        })
-        .finally(function() {
+
+            // Success
+            alert(data.message || 'Category created successfully.');
+
+            // Reset form
+            form.reset();
+
+            // Reload page so the new category appears
+            window.location.reload();
+
+        } catch (error) {
+
+            console.error('Category error:', error);
+
+            nameError.textContent = error.message;
+            nameError.classList.remove('hidden');
+
+        } finally {
+
             submitBtn.disabled = false;
-            submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
-        });
+            submitBtn.innerHTML = '<span>Save Category</span>';
+
+        }
     });
 
-    function deleteCategory(categoryId) {
-        if (!confirm('Are you sure you want to delete this category?')) return;
-
-        const bodyComponent = document.querySelector('body').__x.$data;
-
-        axios.delete(`/admin/categories/${categoryId}`)
-        .then(function(response) {
-            bodyComponent.showNotification('Category deleted successfully.');
-            const row = document.getElementById(`category-row-${categoryId}`);
-            if (row) {
-                row.classList.add('opacity-0', 'transition-opacity', 'duration-300');
-                setTimeout(() => row.remove(), 300);
-            }
-        })
-        .catch(function(error) {
-            bodyComponent.showNotification('Could not delete category.', 'error');
-        });
-    }
+});
 </script>
 @endpush
