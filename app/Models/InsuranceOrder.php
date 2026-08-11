@@ -46,6 +46,8 @@ class InsuranceOrder extends Model
         'sent_at',
         'retry_count',
         'last_error',
+
+        'image_path'
     ];
 
     protected $casts = [
