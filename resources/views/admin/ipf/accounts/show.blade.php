@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+{{-- @extends('layouts.admin') --}}
 
 @section('title', 'IPF Account Detail')
 
@@ -151,4 +151,4 @@
 
     </div>
 </div>
-@endsection
+{{-- @endsection --}}

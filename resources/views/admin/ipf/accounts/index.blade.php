@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+{{-- @extends('layouts.admin') --}}
 
 @section('title', 'IPF Accounts')
 
@@ -122,4 +122,4 @@
         {{ $accounts->links() }}
     </div>
 </div>
-@endsection
+{{-- @endsection --}}

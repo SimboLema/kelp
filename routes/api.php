@@ -79,6 +79,7 @@ Route::prefix('v1')->group(function () {
         Route::get('ipf/accounts', [InsuranceOrderController::class, 'myIpfAccounts']);
         Route::get('orders/{order}/ipf-account', [InsuranceOrderController::class, 'ipfAccount']);
         Route::post('orders/{order}/ipf-payments', [InsuranceOrderController::class, 'recordIpfPayment']);
+        
         //initiate payment
         Route::post(
             '/payments/initiate',
