@@ -73,6 +73,12 @@ Route::prefix('v1')->group(function () {
         // Motor verification — live call to Suretech (motor-verify)
         Route::post('kelp-app/motor/verify', [InsuranceOrderController::class, 'verifyMotor']);
 
+
+        //ipf
+        Route::get('ipf/plans', [InsuranceOrderController::class, 'ipfPlans']);
+        Route::get('ipf/accounts', [InsuranceOrderController::class, 'myIpfAccounts']);
+        Route::get('orders/{order}/ipf-account', [InsuranceOrderController::class, 'ipfAccount']);
+        Route::post('orders/{order}/ipf-payments', [InsuranceOrderController::class, 'recordIpfPayment']);
         //initiate payment
         Route::post(
             '/payments/initiate',

@@ -3,146 +3,201 @@
 namespace App\Services;
 
 use App\Models\InsuranceOrder;
+use App\Models\IpfAccount;
+use App\Models\IpfInstallment;
+use App\Models\IpfPayment;
 use App\Models\IpfPlan;
-use App\Models\IpfSetting;
-use App\Models\IpfTransaction;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use RuntimeException;
 
 class IpfService
 {
     /**
-     * Creates an IPF plan for a new order, snapshotting today's admin-set
-     * rates onto the plan. Future rate changes never retroactively affect
-     * a plan already created.
-     *
-     * @throws \RuntimeException
+     * Open an IPF account for an order against a specific plan, and generate
+     * its full daily installment breakdown in the same transaction.
      */
-    public function createPlan(InsuranceOrder $order, float $totalPremium): IpfPlan
+    public function createPlan(InsuranceOrder $order, IpfPlan $plan, float $totalPremium): IpfAccount
     {
-        $settings = IpfSetting::current();
+        if (IpfAccount::query()->where('insurance_order_id', $order->id)->exists()) {
+            throw new RuntimeException('An IPF account already exists for this order.');
+        }
 
-        $downPaymentAmount = round($totalPremium * $settings->down_payment_percent / 100, 2);
-        $financedAmount    = round($totalPremium - $downPaymentAmount, 2);
-        $dailyInstallment  = round($financedAmount * $settings->daily_rate_percent / 100, 2);
+        return DB::transaction(function () use ($order, $plan, $totalPremium) {
+            $downPaymentAmount = round($totalPremium * ((float) $plan->down_payment_percent / 100), 2);
+            $financedAmount = round($totalPremium - $downPaymentAmount, 2);
 
-        return DB::transaction(function () use ($order, $totalPremium, $settings, $downPaymentAmount, $financedAmount, $dailyInstallment) {
-            $plan = IpfPlan::create([
-                'insurance_order_id'   => $order->id,
-                'total_premium'        => $totalPremium,
-                'down_payment_percent' => $settings->down_payment_percent,
-                'down_payment_amount'  => $downPaymentAmount,
-                'financed_amount'      => $financedAmount,
-                'daily_rate_percent'   => $settings->daily_rate_percent,
-                'daily_installment'    => $dailyInstallment,
-                'penalty_percent'      => $settings->penalty_percent,
-                'outstanding_balance'  => $financedAmount,
-                'start_date'           => now()->toDateString(),
-                'last_charged_date'    => now()->toDateString(),
-                'status'               => 'active',
+            $startDate = now()->startOfDay();
+            $endDate = $startDate->copy()->addDays(max(0, $plan->duration_days - 1));
+
+            $account = IpfAccount::create([
+                'insurance_order_id' => $order->id,
+                'user_id' => $order->user_id,
+                'ipf_plan_id' => $plan->id,
+                'total_premium' => $totalPremium,
+                'down_payment_percent' => $plan->down_payment_percent,
+                'down_payment_amount' => $downPaymentAmount,
+                'financed_amount' => $financedAmount,
+                'total_paid' => 0,
+                'remaining_amount' => $financedAmount,
+                'start_date' => $startDate->toDateString(),
+                'expected_end_date' => $endDate->toDateString(),
+                'status' => 'pending',
             ]);
 
-            IpfTransaction::create([
-                'ipf_plan_id'      => $plan->id,
-                'type'             => 'down_payment',
-                'amount'           => $downPaymentAmount,
-                'balance_after'    => $financedAmount,
-                'transaction_date' => now()->toDateString(),
-                'note'             => 'Initial down payment collected at order creation.',
-            ]);
+            $this->generateInstallments($account, $plan);
 
-            return $plan;
+            return $account->fresh('installments');
         });
     }
 
     /**
-     * Records a customer payment against their plan. Amount doesn't have to
-     * match daily_installment exactly — supports partial or catch-up payments.
+     * Build the day-by-day payment breakdown for an account.
      *
-     * @throws \RuntimeException
+     * - "fixed": financed amount split evenly across duration_days, with the
+     *   last day absorbing any rounding remainder.
+     * - "remaining_balance_percentage": each day's payment is daily_rate_percent
+     *   of whatever is still owed (a declining schedule, per your "5% of the
+     *   remaining amount daily" description). Because a pure percentage of a
+     *   shrinking balance never mathematically reaches zero, the final day of
+     *   the plan is forced to collect whatever balance is left so the account
+     *   actually closes out within duration_days. Flag this assumption if you
+     *   want a different close-out rule (e.g. spill remaining days into a grace
+     *   period instead of forcing payoff on the last day).
      */
-    public function recordPayment(IpfPlan $plan, float $amount, ?string $note = null): IpfTransaction
+    public function generateInstallments(IpfAccount $account, ?IpfPlan $plan = null): void
     {
-        if ($plan->status !== 'active') {
-            throw new \RuntimeException('Cannot record a payment against a plan that is not active.');
+        $plan = $plan ?? $account->plan;
+        $days = max(1, (int) $plan->duration_days);
+        $remaining = (float) $account->financed_amount;
+        $dueDate = Carbon::parse($account->start_date);
+
+        $rows = [];
+
+        if ($plan->calculation_method === 'remaining_balance_percentage') {
+            $rate = ((float) ($plan->daily_rate_percent ?? 0)) / 100;
+
+            for ($day = 1; $day <= $days && $remaining > 0; $day++) {
+                $isLastDay = $day === $days;
+                $amount = $isLastDay ? $remaining : round($remaining * $rate, 2);
+                $amount = min($amount, $remaining);
+
+                $remaining = round($remaining - $amount, 2);
+                $rows[] = $this->installmentRow($account, $day, $dueDate, $amount);
+                $dueDate = $dueDate->copy()->addDay();
+            }
+        } else {
+            $base = floor(($remaining / $days) * 100) / 100;
+
+            for ($day = 1; $day <= $days && $remaining > 0; $day++) {
+                $amount = $day === $days ? $remaining : min($base, $remaining);
+
+                $remaining = round($remaining - $amount, 2);
+                $rows[] = $this->installmentRow($account, $day, $dueDate, $amount);
+                $dueDate = $dueDate->copy()->addDay();
+            }
         }
 
+        if (! empty($rows)) {
+            IpfInstallment::insert($rows);
+        }
+    }
+
+    private function installmentRow(IpfAccount $account, int $day, Carbon $dueDate, float $amount): array
+    {
+        return [
+            'ipf_account_id' => $account->id,
+            'installment_number' => $day,
+            'due_date' => $dueDate->toDateString(),
+            'amount_due' => $amount,
+            'amount_paid' => 0,
+            'remaining_amount' => $amount,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+    }
+
+    /**
+     * Record a payment against an account and apply it to the oldest unpaid
+     * installments first (oldest-first waterfall), updating account totals
+     * and status as it goes.
+     */
+    public function recordPayment(IpfAccount $account, float $amount, ?string $note = null, ?string $method = null): IpfPayment
+    {
         if ($amount <= 0) {
-            throw new \RuntimeException('Payment amount must be greater than zero.');
+            throw new RuntimeException('Payment amount must be greater than zero.');
         }
 
-        return DB::transaction(function () use ($plan, $amount, $note) {
-            $newBalance = max(0, $plan->outstanding_balance - $amount);
+        if ($account->status === 'completed') {
+            throw new RuntimeException('This IPF account is already fully paid.');
+        }
 
-            $transaction = IpfTransaction::create([
-                'ipf_plan_id'      => $plan->id,
-                'type'             => 'installment',
-                'amount'           => $amount,
-                'balance_after'    => $newBalance,
-                'transaction_date' => now()->toDateString(),
-                'note'             => $note,
+        return DB::transaction(function () use ($account, $amount, $note, $method) {
+            $payment = IpfPayment::create([
+                'ipf_account_id' => $account->id,
+                'user_id' => $account->user_id,
+                'amount' => $amount,
+                'payment_method' => $method,
+                'transaction_reference' => 'IPF-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(6)),
+                'status' => 'successful',
+                'paid_at' => now(),
+                'payment_response' => $note ? ['note' => $note] : null,
             ]);
 
-            $plan->update([
-                'outstanding_balance' => $newBalance,
-                'status'               => $newBalance <= 0 ? 'completed' : 'active',
-            ]);
+            $this->applyPaymentToInstallments($account, $payment, $amount);
 
-            return $transaction;
+            $account->refresh();
+            $account->total_paid = round((float) $account->total_paid + $amount, 2);
+            $account->remaining_amount = max(0, round((float) $account->financed_amount - $account->total_paid, 2));
+
+            if ($account->status === 'pending') {
+                $account->status = 'active';
+            }
+            if ($account->remaining_amount <= 0) {
+                $account->status = 'completed';
+            }
+            $account->save();
+
+            return $payment->fresh();
         });
     }
 
-    /**
-     * Daily job: for every active plan not yet charged today, check whether a
-     * payment was recorded today; if not, apply a penalty (daily_installment *
-     * penalty_percent) directly onto the outstanding balance.
-     *
-     * Run once daily via the scheduler, late in the day, so same-day payments
-     * still count before the penalty check runs.
-     */
-    public function applyDailyPenalties(): int
+    private function applyPaymentToInstallments(IpfAccount $account, IpfPayment $payment, float $amount): void
     {
-        $today = now()->toDateString();
-        $count = 0;
+        $installments = $account->installments()
+            ->whereIn('status', ['pending', 'partial', 'overdue'])
+            ->orderBy('installment_number')
+            ->get();
 
-        IpfPlan::query()->where('status', 'active')
-            ->where(function ($q) use ($today) {
-                $q->whereNull('last_charged_date')->orWhere('last_charged_date', '<', $today);
-            })
-            ->chunkById(100, function ($plans) use ($today, &$count) {
-                foreach ($plans as $plan) {
-                    $paidToday = $plan->transactions()
-                        ->where('type', 'installment')
-                        ->whereDate('transaction_date', $today)
-                        ->exists();
+        $remainingPayment = $amount;
+        $lastTouched = null;
 
-                    if ($paidToday) {
-                        $plan->update(['last_charged_date' => $today]);
-                        continue;
-                    }
+        foreach ($installments as $installment) {
+            if ($remainingPayment <= 0) {
+                break;
+            }
 
-                    $penalty = round($plan->daily_installment * $plan->penalty_percent / 100, 2);
-                    $newBalance = $plan->outstanding_balance + $penalty;
+            $owed = (float) $installment->remaining_amount;
+            $portion = min($owed, $remainingPayment);
 
-                    DB::transaction(function () use ($plan, $penalty, $newBalance, $today) {
-                        IpfTransaction::create([
-                            'ipf_plan_id'      => $plan->id,
-                            'type'             => 'penalty',
-                            'amount'           => $penalty,
-                            'balance_after'    => $newBalance,
-                            'transaction_date' => $today,
-                            'note'             => 'Missed daily installment penalty.',
-                        ]);
+            $installment->amount_paid = round((float) $installment->amount_paid + $portion, 2);
+            $installment->remaining_amount = round($owed - $portion, 2);
+            $installment->status = $installment->remaining_amount <= 0 ? 'paid' : 'partial';
+            $installment->paid_at = $installment->status === 'paid' ? now() : $installment->paid_at;
+            $installment->save();
 
-                        $plan->update([
-                            'outstanding_balance' => $newBalance,
-                            'last_charged_date'    => $today,
-                        ]);
-                    });
+            $remainingPayment = round($remainingPayment - $portion, 2);
+            $lastTouched = $installment;
+        }
 
-                    $count++;
-                }
-            });
-
-        return $count;
+        // Any leftover beyond what was owed (an overpayment) is still recorded
+        // on the payment itself via `amount`; it just isn't tied to a specific
+        // installment once every installment is settled.
+        if ($lastTouched) {
+            $payment->ipf_installment_id = $lastTouched->id;
+            $payment->save();
+        }
     }
 }

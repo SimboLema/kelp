@@ -10,9 +10,13 @@ use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerReviewController;
 use App\Http\Controllers\User\UserCategoriesController;
 use App\Http\Controllers\User\UserDashboardController;
-use App\Http\Controllers\Admin\AdminIpfPlanController;
-use App\Http\Controllers\Admin\IpfSettingsController;
 use Illuminate\Support\Facades\Route;
+
+
+
+use App\Http\Controllers\Admin\IpfAccountWebController;
+use App\Http\Controllers\Admin\IpfPlanWebController;
+
 
 Route::get('/',[UserDashboardController::class,'index']);
 
@@ -30,28 +34,27 @@ Route::get('/user/business/{business}', [UserCategoriesController::class, 'detai
 
 Route::post('/business/{id}/review', [UserCategoriesController::class, 'storeReview'])->name('reviews.store');
 
-Route::get('/ipf/settings', [IpfSettingsController::class, 'current']);
-Route::get('/ipf/settings/history', [IpfSettingsController::class, 'history']);
-Route::post('/ipf/settings', [IpfSettingsController::class, 'update']);
+//Admin routes kwa ajili ya ipf
+Route::prefix('admin/ipf')->name('admin.ipf.')->group(function () {
+ 
+    // Plans
+    Route::get('plans', [IpfPlanWebController::class, 'index'])->name('plans.index');
+    Route::get('plans/create', [IpfPlanWebController::class, 'create'])->name('plans.create');
+    Route::post('plans', [IpfPlanWebController::class, 'store'])->name('plans.store');
+    Route::get('plans/{plan}/edit', [IpfPlanWebController::class, 'edit'])->name('plans.edit');
+    Route::put('plans/{plan}', [IpfPlanWebController::class, 'update'])->name('plans.update');
+    Route::delete('plans/{plan}', [IpfPlanWebController::class, 'destroy'])->name('plans.destroy');
+ 
+    // Accounts
+    Route::get('accounts', [IpfAccountWebController::class, 'index'])->name('accounts.index');
+    Route::get('accounts/{account}', [IpfAccountWebController::class, 'show'])->name('accounts.show');
+    Route::post('accounts/{account}/mark-overdue', [IpfAccountWebController::class, 'markOverdue'])->name('accounts.mark-overdue');
+ 
+    // Report
+    Route::get('report', [IpfAccountWebController::class, 'report'])->name('report');
+});
 
-Route::get('/ipf/plans', [AdminIpfPlanController::class, 'index'])->name('admin.ipf');
-Route::get('/ipf/plans/summary', [AdminIpfPlanController::class, 'summary']);
-Route::get('/ipf/plans/{id}', [AdminIpfPlanController::class, 'show']);
 
-Route::post('/ipf/plans/{id}/payments', [
-    AdminIpfPlanController::class,
-    'recordPayment'
-]);
-
-Route::post('/ipf/plans/{planId}/transactions/{transactionId}/waive', [
-    AdminIpfPlanController::class,
-    'waivePenalty'
-]);
-
-Route::post('/ipf/plans/{id}/default', [
-    AdminIpfPlanController::class,
-    'markDefaulted'
-]);
 
 
 // The route your controller is looking for

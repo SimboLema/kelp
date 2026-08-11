@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 use App\Models\InsuranceOrder;
+use App\Models\IpfAccount;
 use App\Models\IpfPlan;
 use App\Services\SuretechService;
 use App\Services\IpfService;
@@ -134,6 +135,14 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $types]);
     }
 
+    // ---- IPF plan catalog (customer-facing) ----
+
+    public function ipfPlans()
+    {
+        $plans = IpfPlan::active()->orderBy('duration_days')->get();
+        return response()->json(['success' => true, 'data' => $plans]);
+    }
+
     // ---- Orders ----
 
     public function myOrders()
@@ -145,7 +154,7 @@ class InsuranceOrderController extends Controller
     public function show($id)
     {
         $order = InsuranceOrder::query()->where('user_id', Auth::id())
-            ->with('ipfPlan.transactions')
+            ->with(['ipfAccount.installments', 'ipfAccount.payments'])
             ->findOrFail($id);
 
         return response()->json(['success' => true, 'data' => $order]);
@@ -181,6 +190,7 @@ class InsuranceOrderController extends Controller
             'sitting_capacity'     => 'nullable|integer',
 
             'payment_mode' => 'required|in:cash,ipf',
+            'ipf_plan_id'  => 'required_if:payment_mode,ipf|integer|exists:ipf_plans,id',
 
             'insurer_name'    => 'nullable|string|max:255',
             'insurance_name'  => 'nullable|string|max:255',
@@ -245,14 +255,21 @@ class InsuranceOrderController extends Controller
             'transmission_status' => 'Pending',
         ]);
 
-        // 4. Create the IPF plan (Kelp-owned, entirely) if applicable
-        $ipfPlan = null;
+        // 4. Open the IPF account (Kelp-owned, entirely) if applicable, using
+        // whichever plan the customer picked.
+        $ipfAccount = null;
         if ($request->payment_mode === 'ipf') {
-            try {
-                $ipfPlan = $this->ipf->createPlan($order, $totalPremium);
-            } catch (\RuntimeException $e) {
-                // Order stays saved even if IPF setup fails — don't lose the order over this.
-                $order->update(['status' => 'IPF setup failed: ' . $e->getMessage()]);
+            $plan = IpfPlan::active()->find($request->ipf_plan_id);
+
+            if (! $plan) {
+                $order->update(['status' => 'IPF setup failed: selected plan is not available.']);
+            } else {
+                try {
+                    $ipfAccount = $this->ipf->createPlan($order, $plan, $totalPremium);
+                } catch (\RuntimeException $e) {
+                    // Order stays saved even if IPF setup fails — don't lose the order over this.
+                    $order->update(['status' => 'IPF setup failed: ' . $e->getMessage()]);
+                }
             }
         }
 
@@ -266,14 +283,14 @@ class InsuranceOrderController extends Controller
             "Payment Mode: " . strtoupper($request->payment_mode),
         ];
 
-        if ($ipfPlan) {
+        if ($ipfAccount) {
             $descriptionParts[] = sprintf(
-                "IPF Plan — Total: %s, Down payment (%.2f%%): %s, Financed: %s, Daily installment: %s",
+                "IPF Plan — Total: %s, Down payment (%.2f%%): %s, Financed: %s, Duration: %d day(s)",
                 number_format($totalPremium, 2),
-                $ipfPlan->down_payment_percent,
-                number_format($ipfPlan->down_payment_amount, 2),
-                number_format($ipfPlan->financed_amount, 2),
-                number_format($ipfPlan->daily_installment, 2)
+                $ipfAccount->down_payment_percent,
+                number_format($ipfAccount->down_payment_amount, 2),
+                number_format($ipfAccount->financed_amount, 2),
+                $ipfAccount->plan->duration_days ?? 0
             );
         }
 
@@ -311,17 +328,17 @@ class InsuranceOrderController extends Controller
             $order->update(['transmission_status' => 'Sent']);
         } catch (\RuntimeException $e) {
             $order->update(['transmission_status' => 'Failed']);
-            // Order and IPF plan stay saved locally regardless — Kelp never loses
+            // Order and IPF account stay saved locally regardless — Kelp never loses
             // an order over a downstream transmission failure.
         }
 
         return response()->json([
             'success' => true,
             'message' => 'Insurance order submitted successfully.'
-                . ($request->payment_mode === 'ipf' ? ' IPF plan created.' : ''),
+                . ($request->payment_mode === 'ipf' ? ' IPF account created.' : ''),
             'data' => [
-                'order'    => $order,
-                'ipf_plan' => $ipfPlan,
+                'order'      => $order,
+                'ipf_account' => $ipfAccount,
             ],
         ], 201);
     }
@@ -374,20 +391,46 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $result]);
     }
 
-    // ---- IPF payments ----
+    // ---- IPF: customer-facing account + payments ----
+
+    public function myIpfAccounts()
+    {
+        $accounts = IpfAccount::with(['plan', 'order:id,reference_no,registration_number'])
+            ->where('user_id', Auth::id())
+            ->latest()
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $accounts]);
+    }
+
+    public function ipfAccount($orderId)
+    {
+        $order = InsuranceOrder::query()->where('user_id', Auth::id())->findOrFail($orderId);
+
+        $account = IpfAccount::with([
+                'plan',
+                'installments' => fn ($q) => $q->orderBy('installment_number'),
+                'payments' => fn ($q) => $q->latest(),
+            ])
+            ->where('insurance_order_id', $order->id)
+            ->firstOrFail();
+
+        return response()->json(['success' => true, 'data' => $account]);
+    }
 
     public function recordIpfPayment(Request $request, $orderId)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:0.01',
-            'note'   => 'nullable|string|max:255',
+            'amount'         => 'required|numeric|min:0.01',
+            'note'           => 'nullable|string|max:255',
+            'payment_method' => 'nullable|string|max:50',
         ]);
 
         $order = InsuranceOrder::query()->where('user_id', Auth::id())->findOrFail($orderId);
-        $plan = IpfPlan::query()->where('insurance_order_id', $order->id)->firstOrFail();
+        $account = IpfAccount::query()->where('insurance_order_id', $order->id)->firstOrFail();
 
         try {
-            $transaction = $this->ipf->recordPayment($plan, $request->amount, $request->note);
+            $payment = $this->ipf->recordPayment($account, $request->amount, $request->note, $request->payment_method);
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
@@ -395,17 +438,9 @@ class InsuranceOrderController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'transaction' => $transaction,
-                'plan' => $plan->fresh(),
+                'payment' => $payment,
+                'account' => $account->fresh(['installments', 'payments']),
             ],
         ]);
-    }
-
-    public function ipfPlan($orderId)
-    {
-        $order = InsuranceOrder::query()->where('user_id', Auth::id())->findOrFail($orderId);
-        $plan = IpfPlan::with('transactions')->where('insurance_order_id', $order->id)->firstOrFail();
-
-        return response()->json(['success' => true, 'data' => $plan]);
     }
 }

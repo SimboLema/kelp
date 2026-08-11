@@ -17,7 +17,27 @@ class InsuranceOrder extends Model
         'insurance_id',
         'product_id',
         'coverage_id',
+    
+        'insurer_name',
+        'insurance_name',
+        'product_name',
+        'coverage_name',
+    
         'description',
+    
+        'sum_insured',
+        'premium',
+        'premium_breakdown',
+    
+        'customer_details',
+        'motor_details',
+    
+        'cover_note_start_date',
+        'cover_note_end_date',
+    
+        'payment_mode',
+        'registration_number',
+    
         'status',
         'transmission_status',
         'external_reference',
@@ -31,6 +51,15 @@ class InsuranceOrder extends Model
     protected $casts = [
         'request_payload' => 'array',
         'response_payload' => 'array',
+        'premium_breakdown' => 'array',
+        'customer_details' => 'array',
+        'motor_details' => 'array',
+    
+        'sum_insured' => 'decimal:2',
+        'premium' => 'decimal:2',
+    
+        'cover_note_start_date' => 'date',
+        'cover_note_end_date' => 'date',
         'sent_at' => 'datetime',
     ];
 
@@ -63,4 +92,10 @@ class InsuranceOrder extends Model
     {
         return 'INS-' . now()->format('YmdHis') . rand(100, 999);
     }
+
+    public function ipfAccount()
+    {
+    return $this->hasOne(IpfAccount::class);
+    }
+    
 }
