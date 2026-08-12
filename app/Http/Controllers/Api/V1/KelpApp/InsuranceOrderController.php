@@ -293,11 +293,8 @@ class InsuranceOrderController extends Controller
             }
         }
 
-        // 5. Transmit to Suretech using ONLY the fields its live endpoint accepts.
-        // Everything else (KYC, motor detail, IPF summary) is packed into
-        // `description` as a readable block, since that's the only free-text
-        // field available to carry extra context to whoever reviews the order
-        // on the Suretech side.
+        // 5. Transmit to Suretech using the nested structure expected by its
+        // IncomingInsuranceOrderController.
         $descriptionParts = [
             "Order Reference: {$order->reference_no}",
             "Payment Mode: " . strtoupper($request->payment_mode),
@@ -334,16 +331,61 @@ class InsuranceOrderController extends Controller
         $fullDescription = implode("\n", $descriptionParts);
 
         try {
+            $user = Auth::user();
+
             $this->suretech->submitOrder([
-                'reference_no'   => $order->reference_no,
-                'customer_name'  => Auth::user()->name ?? null,
-                'customer_phone' => Auth::user()->phone ?? null,
-                'customer_email' => Auth::user()->email ?? null,
-                'insurance'      => $request->insurance_name,
-                'product'        => $request->product_name,
-                'coverage'       => $request->coverage_name,
-                'description'    => $fullDescription,
-                'created_at'     => $order->created_at,
+                'reference_no' => $order->reference_no,
+                'customer' => [
+                    'name'                  => $user?->name,
+                    'dob'                   => $request->input('customer.dob'),
+                    'policy_holder_type_id' => $request->input('customer.policy_holder_type_id'),
+                    'id_number'             => $request->input('customer.id_number'),
+                    'id_type_id'            => $request->input('customer.id_type_id'),
+                    'gender'                => $request->input('customer.gender'),
+                    'country_id'            => $request->input('customer.country_id'),
+                    'region_id'             => $request->input('customer.region_id'),
+                    'district_id'           => $request->input('customer.district_id'),
+                    'phone'                 => $user?->phone_number,
+                    'email'                 => $user?->email,
+                    'street'                => $request->input('customer.street'),
+                    'postal_address'        => $request->input('customer.postal_address'),
+                    'fax'                   => $request->input('customer.fax'),
+                ],
+                'motor' => [
+                    'registration_number' => $vehicle['registration_number'],
+                    'chassis_number'      => $vehicle['chassis_number'],
+                    'make'                => $vehicle['make'],
+                    'model'               => $vehicle['model'],
+                    'model_number'        => $vehicle['model_number'],
+                    'body_type'           => $vehicle['body_type'],
+                    'color'               => $vehicle['color'],
+                    'engine_number'       => $vehicle['engine_number'],
+                    'engine_capacity'     => $vehicle['engine_capacity'],
+                    'fuel_used'           => $vehicle['fuel_used'],
+                    'number_of_axles'     => $vehicle['number_of_axles'],
+                    'axle_distance'       => $vehicle['axle_distance'],
+                    'sitting_capacity'    => $vehicle['sitting_capacity'],
+                    'year_of_manufacture' => $vehicle['year_of_manufacture'],
+                    'tare_weight'         => $vehicle['tare_weight'],
+                    'gross_weight'        => $vehicle['gross_weight'],
+                    'motor_usage'         => $vehicle['motor_usage'],
+                    'owner_category'      => $vehicle['owner_category'],
+                    'motor_category_id'   => $request->motor_category,
+                    'motor_type_id'       => $request->motor_type_id,
+                ],
+                'coverage_id'           => $request->coverage_id,
+                'sum_insured'           => $request->sum_insured,
+                'cover_note_start_date' => $request->cover_note_start_date,
+                'cover_note_end_date'   => $request->cover_note_end_date,
+                'payment_mode'          => $request->payment_mode,
+                'ipf_plan_id'           => $request->payment_mode === 'ipf'
+                    ? $request->ipf_plan_id
+                    : null,
+                'insurance'             => $request->insurance_name,
+                'product'               => $request->product_name,
+                'coverage'              => $request->coverage_name,
+                'description'           => $fullDescription,
+                'created_at'            => $order->created_at,
             ]);
             $order->update(['transmission_status' => 'Sent']);
         } catch (\RuntimeException $e) {
