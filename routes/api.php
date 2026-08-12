@@ -55,6 +55,8 @@ Route::prefix('v1')->group(function () {
         Route::get('/products/{insurance}', [InsuranceOrderController::class, 'products']);
         Route::get('/coverages/{product}', [InsuranceOrderController::class, 'coverages']);
         Route::get('/motor-categories', [InsuranceOrderController::class, 'motorCategories']);
+        Route::get('/motor-usage', [InsuranceOrderController::class, 'motorUsage']);
+        Route::get('/owner-category', [InsuranceOrderController::class, 'ownerCategory']);
         Route::get('/cover-note-durations', [InsuranceOrderController::class, 'coverNoteDurations']);
         Route::get('/countries', [InsuranceOrderController::class, 'countries']);
         Route::get('/regions', [InsuranceOrderController::class, 'regions']);
