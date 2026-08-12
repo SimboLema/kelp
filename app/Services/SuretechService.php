@@ -230,6 +230,12 @@ class SuretechService
     {
         return $this->get('/api/kelp/policy-holder-id-types');
     }
+
+    public function getMotorUsage(){
+        return $this->get('/api/kelp/motor-usage');
+    }
+
+    
     /**
      * Push an order to Suretech's IncomingInsuranceOrderController.
      * NOTE: this endpoint uses a different response envelope

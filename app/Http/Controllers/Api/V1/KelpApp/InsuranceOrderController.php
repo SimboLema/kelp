@@ -23,7 +23,7 @@ class InsuranceOrderController extends Controller
         $this->ipf = $ipf;
     }
 
-    // ---- Catalog passthroughs (all live on Suretech already) ----
+
 
     public function insurers()
     {
@@ -135,7 +135,17 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $types]);
     }
 
-    // ---- IPF plan catalog (customer-facing) ----
+    public function motorUsage(){
+        try{
+            $motorUsage = $this->suretech->getMotorUsage();
+        }
+        catch(\RuntimeException $e){
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+        return response()->json(['success' => true, 'data' => $motorUsage]);
+    }
+
+
 
     public function ipfPlans()
     {
@@ -143,7 +153,7 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $plans]);
     }
 
-    // ---- Orders ----
+
 
     public function myOrders()
     {
@@ -178,7 +188,7 @@ class InsuranceOrderController extends Controller
             'customer.region_id'             => 'required|integer',
             'customer.district_id'           => 'required|integer',
             'customer.street'                => 'nullable|string',
-            'customer.postal_address'        => 'required|string',
+            'customer.postal_address'        => 'nullable|string',
             'customer.fax'                   => 'nullable|string',
 
             'motor_category'       => 'required|in:1,2',
