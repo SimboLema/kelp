@@ -11,6 +11,7 @@ use App\Models\IpfAccount;
 use App\Models\IpfPlan;
 use App\Services\SuretechService;
 use App\Services\IpfService;
+use Illuminate\Support\Carbon;
 
 class InsuranceOrderController extends Controller
 {
@@ -332,6 +333,12 @@ class InsuranceOrderController extends Controller
 
         try {
             $user = Auth::user();
+            $suretechCoverNoteStartDate = Carbon::parse(
+                $request->cover_note_start_date
+            )->startOfDay()->format('Y-m-d H:i:s');
+            $suretechCoverNoteEndDate = Carbon::parse(
+                $request->cover_note_end_date
+            )->startOfDay()->format('Y-m-d H:i:s');
 
             $this->suretech->submitOrder([
                 'reference_no' => $order->reference_no,
@@ -368,15 +375,15 @@ class InsuranceOrderController extends Controller
                     'year_of_manufacture' => $vehicle['year_of_manufacture'],
                     'tare_weight'         => $vehicle['tare_weight'],
                     'gross_weight'        => $vehicle['gross_weight'],
-                    'motor_usage'         => $vehicle['motor_usage'],
-                    'owner_category'      => $vehicle['owner_category'],
+                    'motor_usage'         => $request->motor_usage_id,
+                    'owner_category'      => $request->owner_category_id,
                     'motor_category_id'   => $request->motor_category,
                     'motor_type_id'       => $request->motor_type_id,
                 ],
                 'coverage_id'           => $request->coverage_id,
                 'sum_insured'           => $request->sum_insured,
-                'cover_note_start_date' => $request->cover_note_start_date,
-                'cover_note_end_date'   => $request->cover_note_end_date,
+                'cover_note_start_date' => $suretechCoverNoteStartDate,
+                'cover_note_end_date'   => $suretechCoverNoteEndDate,
                 'payment_mode'          => $request->payment_mode,
                 'ipf_plan_id'           => $request->payment_mode === 'ipf'
                     ? $request->ipf_plan_id
