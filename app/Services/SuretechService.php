@@ -235,7 +235,11 @@ class SuretechService
         return $this->get('/api/kelp/motor-usage');
     }
 
-    
+    public function getOwnerCategory(){
+        return $this->get('/api/kelp/owner-category');
+    }
+
+
     /**
      * Push an order to Suretech's IncomingInsuranceOrderController.
      * NOTE: this endpoint uses a different response envelope

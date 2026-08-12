@@ -145,6 +145,16 @@ class InsuranceOrderController extends Controller
         return response()->json(['success' => true, 'data' => $motorUsage]);
     }
 
+    public function ownerCategory(){
+        try{
+            $ownerCategory= $this->suretech->getOwnerCategory();
+        }
+        catch(\RuntimeException $e){
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
+        }
+        return response()->json(['success' => true, 'data' => $ownerCategory]);
+    }
+
 
 
     public function ipfPlans()
