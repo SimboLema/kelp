@@ -129,13 +129,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
 
                     <!-- Total Agents -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-5 rounded-2xl shadow-lg shadow-orange-500/20 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                            <span class="text-xs font-bold tracking-wider text-orange-100 uppercase">
                                 Total Agents
                             </span>
 
-                            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
+                            <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M17 20h5v-2a3 3 0 00-5.356-1.857
@@ -149,11 +149,11 @@
                         </div>
 
                         <div class="mt-4">
-                            <h2 class="text-2xl font-bold text-slate-900">
+                            <h2 class="text-3xl font-extrabold text-white tracking-tight">
                                 {{ number_format($totalAgents) }}
                             </h2>
 
-                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-slate-400">
+                            <div class="flex items-center gap-1 mt-2 text-xs font-medium text-orange-100">
                                 <span>Registered insurance agents</span>
                             </div>
                         </div>
@@ -161,13 +161,13 @@
 
 
                     <!-- Total Businesses -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-5 rounded-2xl shadow-lg shadow-orange-500/20 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                            <span class="text-xs font-bold tracking-wider text-orange-100 uppercase">
                                 Total Businesses
                             </span>
 
-                            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
+                            <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16
@@ -177,11 +177,11 @@
                         </div>
 
                         <div class="mt-4">
-                            <h2 class="text-2xl font-bold text-slate-900">
+                            <h2 class="text-3xl font-extrabold text-white tracking-tight">
                                 {{ number_format($totalBusinesses) }}
                             </h2>
 
-                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-slate-400">
+                            <div class="flex items-center gap-1 mt-2 text-xs font-medium text-orange-100">
                                 <span>Registered businesses</span>
                             </div>
                         </div>
@@ -189,13 +189,13 @@
 
 
                     <!-- Total Insurance Orders -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-5 rounded-2xl shadow-lg shadow-orange-500/20 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                            <span class="text-xs font-bold tracking-wider text-orange-100 uppercase">
                                 Insurance Orders
                             </span>
 
-                            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
+                            <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l4 4v12a2 2 0 01-2 2z
@@ -205,11 +205,11 @@
                         </div>
 
                         <div class="mt-4">
-                            <h2 class="text-2xl font-bold text-slate-900">
+                            <h2 class="text-3xl font-extrabold text-white tracking-tight">
                                 {{ number_format($totalInsuranceOrders) }}
                             </h2>
 
-                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-slate-400">
+                            <div class="flex items-center gap-1 mt-2 text-xs font-medium text-orange-100">
                                 <span>Total insurance orders</span>
                             </div>
                         </div>
@@ -217,13 +217,13 @@
 
 
                     <!-- Total Reviews -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                    <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-5 rounded-2xl shadow-lg shadow-orange-500/20 text-white flex flex-col justify-between relative overflow-hidden">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                            <span class="text-xs font-bold tracking-wider text-orange-100 uppercase">
                                 Total Reviews
                             </span>
 
-                            <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
+                            <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M11.049 2.927c.3-.921 1.603-.921 1.902 0
@@ -240,11 +240,11 @@
                         </div>
 
                         <div class="mt-4">
-                            <h2 class="text-2xl font-bold text-slate-900">
+                            <h2 class="text-3xl font-extrabold text-white tracking-tight">
                                 {{ number_format($totalReviews) }}
                             </h2>
 
-                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-slate-400">
+                            <div class="flex items-center gap-1 mt-2 text-xs font-medium text-orange-100">
                                 <span>Customer reviews</span>
                             </div>
                         </div>
@@ -253,42 +253,7 @@
                 </div>
 
                 <!-- TABLE SECTION -->
-                <div class="bg-white border border-slate-200/80 rounded-2xl shadow-sm overflow-hidden">
-                    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-                        <h3 class="font-bold text-slate-800">Recent Transactions</h3>
-                        <a href="#" class="text-xs font-semibold text-brand-600 hover:text-brand-500">View All</a>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm text-slate-600">
-                            <thead class="bg-slate-50/50 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-100">
-                                <tr>
-                                    <th class="px-6 py-3">Customer</th>
-                                    <th class="px-6 py-3">Status</th>
-                                    <th class="px-6 py-3">Amount</th>
-                                    <th class="px-6 py-3">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="px-6 py-4 font-medium text-slate-900">Jane Doe</td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600">Completed</span>
-                                    </td>
-                                    <td class="px-6 py-4 font-semibold text-slate-900">$240.00</td>
-                                    <td class="px-6 py-4 text-slate-400">Just now</td>
-                                </tr>
-                                <tr class="hover:bg-slate-50/50 transition-colors">
-                                    <td class="px-6 py-4 font-medium text-slate-900">John Smith</td>
-                                    <td class="px-6 py-4">
-                                        <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-brand-50 text-brand-600">Pending</span>
-                                    </td>
-                                    <td class="px-6 py-4 font-semibold text-slate-900">$185.50</td>
-                                    <td class="px-6 py-4 text-slate-400">2 hours ago</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                
 
             </main>
         </div>
