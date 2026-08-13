@@ -28,19 +28,17 @@
 <body class="bg-slate-50 font-sans text-slate-800 antialiased" x-data="{ sidebarOpen: false }">
 
     <div class="min-h-screen flex">
-        
+
         <!-- SIDEBAR -->
-        <aside 
+        <aside
             :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
             class="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 md:static md:inset-0">
-            
+
             <!-- Logo Header -->
             <div class="h-16 flex items-center px-6 border-b border-slate-100 justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 bg-brand-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md shadow-brand-500/20">
-                        A
-                    </div>
-                    <span class="font-bold text-lg text-slate-900 tracking-tight">Admin<span class="text-brand-500">Core</span></span>
+                    <!-- Logo -->
+                    <img src="{{ asset('assets/images/logo.png') }}" alt="Logo" class="h-12 w-auto object-contain">
                 </div>
                 <button @click="sidebarOpen = false" class="md:hidden text-slate-400 hover:text-slate-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -50,7 +48,7 @@
             <!-- Navigation Links -->
             <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                 <p class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Main Menu</p>
-                
+
                 <!-- Active Link -->
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-brand-50 text-brand-600 font-medium transition-all">
                     <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 00-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -94,10 +92,10 @@
             <!-- User Profile Footer -->
             <div class="p-4 border-t border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <img src="https://ui-avatars.com/api/?name=Admin+User&background=ffedd5&color=ea580c" class="w-9 h-9 rounded-full" alt="User">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()?->name ?? 'Admin User') }}&background=ffedd5&color=ea580c" class="w-9 h-9 rounded-full" alt="{{ Auth::user()?->name ?? 'Admin' }}">
                     <div class="text-xs">
-                        <p class="font-semibold text-slate-800">Admin User</p>
-                        <p class="text-slate-400">admin@company.com</p>
+                        <p class="font-semibold text-slate-800">{{ Auth::user()?->name ?? 'Admin User' }}</p>
+                        <p class="text-slate-400">{{ Auth::user()?->email ?? 'admin@company.com' }}</p>
                     </div>
                 </div>
             </div>
@@ -105,7 +103,7 @@
 
         <!-- MAIN CONTENT AREA -->
         <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-            
+
             <!-- Top Navbar -->
             <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6">
                 <div class="flex items-center gap-4">
@@ -126,74 +124,128 @@
 
             <!-- Main Dashboard Body -->
             <main class="flex-1 overflow-y-auto p-6 space-y-6">
-                
+
                 <!-- STATS CARDS GRID -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    
-                    <!-- Card 1 -->
+
+                    <!-- Total Agents -->
                     <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">Total Revenue</span>
+                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                                Total Agents
+                            </span>
+
                             <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857
+                                        M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857
+                                        M7 20H2v-2a3 3 0 015.356-1.857
+                                        M7 20v-2c0-.656.126-1.283.356-1.857
+                                        m0 0a5.002 5.002 0 019.288 0
+                                        M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
                             </div>
                         </div>
+
                         <div class="mt-4">
-                            <h2 class="text-2xl font-bold text-slate-900">$128,430.00</h2>
-                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-emerald-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                                <span>+12.5% <span class="text-slate-400 font-normal">vs last month</span></span>
+                            <h2 class="text-2xl font-bold text-slate-900">
+                                {{ number_format($totalAgents) }}
+                            </h2>
+
+                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-slate-400">
+                                <span>Registered insurance agents</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Card 2 -->
+
+                    <!-- Total Businesses -->
                     <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">Active Orders</span>
+                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                                Total Businesses
+                            </span>
+
                             <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3 21h18M5 21V5a2 2 0 012-2h10a2 2 0 012 2v16
+                                        M9 21v-4h6v4M9 7h2m2 0h2M9 11h2m2 0h2"/>
+                                </svg>
                             </div>
                         </div>
+
                         <div class="mt-4">
-                            <h2 class="text-2xl font-bold text-slate-900">1,429</h2>
-                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-emerald-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                                <span>+8.2% <span class="text-slate-400 font-normal">vs last month</span></span>
+                            <h2 class="text-2xl font-bold text-slate-900">
+                                {{ number_format($totalBusinesses) }}
+                            </h2>
+
+                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-slate-400">
+                                <span>Registered businesses</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Card 3 -->
+
+                    <!-- Total Insurance Orders -->
                     <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">Total Customers</span>
+                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                                Insurance Orders
+                            </span>
+
                             <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h6l4 4v12a2 2 0 01-2 2z
+                                        M13 3v4h4"/>
+                                </svg>
                             </div>
                         </div>
+
                         <div class="mt-4">
-                            <h2 class="text-2xl font-bold text-slate-900">8,950</h2>
-                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-rose-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/></svg>
-                                <span>-1.5% <span class="text-slate-400 font-normal">vs last month</span></span>
+                            <h2 class="text-2xl font-bold text-slate-900">
+                                {{ number_format($totalInsuranceOrders) }}
+                            </h2>
+
+                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-slate-400">
+                                <span>Total insurance orders</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Card 4 -->
+
+                    <!-- Total Reviews -->
                     <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
                         <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">Conversion Rate</span>
+                            <span class="text-xs font-bold tracking-wider text-slate-400 uppercase">
+                                Total Reviews
+                            </span>
+
                             <div class="w-10 h-10 rounded-xl bg-brand-50 flex items-center justify-center text-brand-500">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0
+                                        l1.286 3.96a1 1 0 00.95.69h4.163c.969 0 1.371 1.24.588 1.81
+                                        l-3.368 2.446a1 1 0 00-.364 1.118l1.287 3.96
+                                        c.3.922-.755 1.688-1.54 1.95-.588l-3.368-2.446
+                                        a1 1 0 00-1.176 0l-3.368 2.446
+                                        c-.795.578-1.85-.307-1.54-1.228l1.287-3.96
+                                        a1 1 0 00-.364-1.118L2.98 9.387
+                                        c-.783-.57-.38-1.81.588-1.81h4.163
+                                        a1 1 0 00.95-.69l1.286-3.96z"/>
+                                </svg>
                             </div>
                         </div>
+
                         <div class="mt-4">
-                            <h2 class="text-2xl font-bold text-slate-900">3.42%</h2>
-                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-emerald-600">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                                <span>+0.4% <span class="text-slate-400 font-normal">vs last month</span></span>
+                            <h2 class="text-2xl font-bold text-slate-900">
+                                {{ number_format($totalReviews) }}
+                            </h2>
+
+                            <div class="flex items-center gap-1 mt-2 text-xs font-semibold text-slate-400">
+                                <span>Customer reviews</span>
                             </div>
                         </div>
                     </div>
