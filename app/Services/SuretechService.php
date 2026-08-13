@@ -85,7 +85,9 @@ class SuretechService
     public function verifyMotor(array $payload): array
     {
         try {
-            $response = $this->client()->post($this->baseUrl . '/api/kelp/motor-verify', $payload);
+            $response = $this->client()
+                ->timeout(30)
+                ->post($this->baseUrl . '/api/kelp/motor-verify', $payload);
             $data = $response->json();
 
             if ($response->failed() || !($data['success'] ?? false)) {
