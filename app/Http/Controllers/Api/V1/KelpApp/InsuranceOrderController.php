@@ -223,11 +223,9 @@ class InsuranceOrderController extends Controller
 
     // 1. Verify vehicle against TIRA (never trust client-cached data)
     try {
-        $vehicle = $this->suretech->verifyMotor([
-            'motor_category' => $request->motor_category,
-            'motor_registration_number' => $request->registration_number,
-            'motor_chassis_number' => $request->chassis_number,
-        ]);
+        $vehicle = $this->suretech->verifyMotor(
+            $this->motorVerificationPayload($request)
+        );
     } catch (\RuntimeException $e) {
         return response()->json(['success' => false, 'message' => 'Vehicle verification failed: ' . $e->getMessage()], 502);
     }
@@ -427,11 +425,9 @@ class InsuranceOrderController extends Controller
         ]);
 
         try {
-            $vehicle = $this->suretech->verifyMotor([
-                'motor_category' => $request->motor_category,
-                'motor_registration_number' => $request->registration_number,
-                'motor_chassis_number' => $request->chassis_number,
-            ]);
+            $vehicle = $this->suretech->verifyMotor(
+                $this->motorVerificationPayload($request)
+            );
         } catch (\RuntimeException $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 502);
         }
@@ -517,5 +513,21 @@ class InsuranceOrderController extends Controller
                 'account' => $account->fresh(['installments', 'payments']),
             ],
         ]);
+    }
+
+    private function motorVerificationPayload(Request $request): array
+    {
+        $payload = [
+            'motor_category' => (int) $request->motor_category,
+            'motor_registration_number' => strtoupper(trim((string) $request->registration_number)),
+        ];
+
+        $chassisNumber = trim((string) $request->chassis_number);
+
+        if ($chassisNumber !== '') {
+            $payload['motor_chassis_number'] = strtoupper($chassisNumber);
+        }
+
+        return $payload;
     }
 }
