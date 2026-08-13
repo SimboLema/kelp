@@ -16,11 +16,11 @@ class IpfAccountWebController extends Controller
     public function index(Request $request): View
     {
         $query = IpfAccount::with([
-                'user:id,name,phone,email',
-                'plan:id,name,duration_days',
-                'order:id,reference_no,registration_number',
-            ])
-            ->latest();
+            'user:id,name,phone_number,email',
+            'plan:id,name,duration_days',
+            'order:id,reference_no,registration_number',
+        ])
+        ->latest();
 
         if ($status = $request->query('status')) {
             $query->where('status', $status);
@@ -33,7 +33,7 @@ class IpfAccountWebController extends Controller
         if ($search = $request->query('search')) {
             $query->where(function ($q) use ($search) {
                 $q->whereHas('user', fn ($u) => $u->where('name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%"))
+                        ->orWhere('phone_number', 'like', "%{$search}%"))
                   ->orWhereHas('order', fn ($o) => $o->where('reference_no', 'like', "%{$search}%")
                         ->orWhere('registration_number', 'like', "%{$search}%"));
             });
@@ -48,13 +48,13 @@ class IpfAccountWebController extends Controller
     public function show($id): View
     {
         $account = IpfAccount::with([
-                'user:id,name,phone,email',
-                'plan',
-                'order',
-                'installments' => fn ($q) => $q->orderBy('installment_number'),
-                'payments' => fn ($q) => $q->latest(),
-            ])
-            ->findOrFail($id);
+            'user:id,name,phone_number,email',
+            'plan',
+            'order',
+            'installments' => fn ($q) => $q->orderBy('installment_number'),
+            'payments' => fn ($q) => $q->latest(),
+        ])
+        ->findOrFail($id);
 
         return view('admin.ipf.accounts.show', compact('account'));
     }

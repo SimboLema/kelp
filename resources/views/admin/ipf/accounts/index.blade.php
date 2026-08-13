@@ -41,9 +41,9 @@
 <!-- TOP NAVIGATION / HEADER -->
 <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        
+
         <!-- Back to Dashboard Button -->
-        <a href="{{ route('admin.dashboard') }}" 
+        <a href="{{ route('admin.dashboard') }}"
            class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 hover:text-slate-900 transition-all border border-slate-200/80">
             <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -69,7 +69,7 @@
             <p class="text-sm text-slate-500 mt-0.5">Manage and track insurance premium financing accounts.</p>
         </div>
         <div>
-            <a href="{{ route('admin.ipf.report') }}" 
+            <a href="{{ route('admin.ipf.report') }}"
                class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-brand-600 bg-brand-50 hover:bg-brand-100 rounded-xl transition-all border border-brand-100">
                 <span>View Report</span>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,10 +93,10 @@
 
     <!-- FILTER FORM CARD -->
     <form method="GET" class="bg-white shadow-sm rounded-2xl border border-slate-200/80 p-5 mb-6 flex flex-wrap gap-4 items-end">
-        
+
         <div class="flex-1 min-w-[220px]">
             <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">Search</label>
-            <input type="text" name="search" value="{{ request('search') }}" 
+            <input type="text" name="search" value="{{ request('search') }}"
                    placeholder="Customer, phone, order ref, reg no."
                    class="w-full rounded-xl border-slate-200 text-sm focus:border-brand-500 focus:ring-brand-500/20 placeholder-slate-400 bg-slate-50/50">
         </div>
@@ -124,13 +124,13 @@
         </div>
 
         <div class="flex items-center gap-2 pt-2 sm:pt-0">
-            <button type="submit" 
+            <button type="submit"
                     class="px-5 py-2.5 bg-brand-500 text-white text-sm font-semibold rounded-xl hover:bg-brand-600 transition-all shadow-md shadow-brand-500/20">
                 Filter Results
             </button>
 
             @if (request()->hasAny(['search', 'status', 'ipf_plan_id']))
-                <a href="{{ route('admin.ipf.accounts.index') }}" 
+                <a href="{{ route('admin.ipf.accounts.index') }}"
                    class="px-3.5 py-2.5 text-sm text-slate-500 hover:text-slate-700 font-medium hover:bg-slate-100 rounded-xl transition-all">
                     Reset
                 </a>
@@ -160,7 +160,7 @@
                         <tr class="hover:bg-slate-50/60 transition-colors">
                             <td class="px-5 py-4">
                                 <div class="font-semibold text-slate-900">{{ $account->user->name ?? '—' }}</div>
-                                <div class="text-slate-400 text-xs">{{ $account->user->phone ?? '' }}</div>
+                                <div class="text-slate-400 text-xs">{{ $account->user->phone_number ?? '' }}</div>
                             </td>
                             <td class="px-5 py-4 text-slate-700">
                                 <div class="font-medium text-slate-800">{{ $account->order->reference_no ?? '—' }}</div>
@@ -190,7 +190,7 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4 text-right whitespace-nowrap">
-                                <a href="{{ route('admin.ipf.accounts.show', $account->id) }}" 
+                                <a href="{{ route('admin.ipf.accounts.show', $account->id) }}"
                                    class="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-500 hover:underline">
                                     <span>View</span>
                                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
