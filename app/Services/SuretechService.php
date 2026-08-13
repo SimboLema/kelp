@@ -86,7 +86,7 @@ class SuretechService
     {
         try {
             $response = $this->client()
-                ->timeout(30)
+                ->timeout(50)
                 ->post($this->baseUrl . '/api/kelp/motor-verify', $payload);
             $data = $response->json();
 
