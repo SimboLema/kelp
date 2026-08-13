@@ -89,8 +89,13 @@ class SuretechService
             $data = $response->json();
 
             if ($response->failed() || !($data['success'] ?? false)) {
-                Log::error('Suretech motor verification failed.', ['payload' => $payload, 'response' => $data]);
-                throw new \RuntimeException($data['message'] ?? $data['error'] ?? 'Unable to verify vehicle details.');
+                Log::error('Suretech motor verification failed.', [
+                    'payload' => $payload,
+                    'response' => $data,
+                    'body_preview' => substr($response->body(), 0, 500),
+                ]);
+
+                throw new \RuntimeException($this->motorVerificationUnavailableMessage());
             }
 
             return $this->parseTiraMotorXml($data);
@@ -114,14 +119,36 @@ class SuretechService
 
         if (empty($xmlString) || !is_string($xmlString)) {
             Log::error('Suretech motor verification returned no XML payload.', ['response' => $data]);
-            throw new \RuntimeException('Vehicle verification did not return any data.');
+            throw new \RuntimeException($this->motorVerificationUnavailableMessage());
         }
 
-        $xml = @simplexml_load_string($xmlString);
+        $xmlString = $this->normalizeTiraXml($xmlString);
+
+        if (!str_starts_with(ltrim($xmlString), '<')) {
+            Log::error('Suretech motor verification returned non-XML.', [
+                'response' => $data,
+                'xml_preview' => substr($xmlString, 0, 500),
+            ]);
+
+            throw new \RuntimeException($this->motorVerificationUnavailableMessage());
+        }
+
+        $previousXmlErrors = libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($xmlString);
+        $xmlErrors = libxml_get_errors();
+        libxml_clear_errors();
+        libxml_use_internal_errors($previousXmlErrors);
 
         if ($xml === false) {
-            Log::error('Could not parse TIRA XML from Suretech response.', ['xml' => $xmlString]);
-            throw new \RuntimeException('Unable to read vehicle verification response.');
+            Log::error('Could not parse TIRA XML from Suretech response.', [
+                'xml_preview' => substr($xmlString, 0, 500),
+                'errors' => array_map(
+                    fn ($error) => trim($error->message),
+                    $xmlErrors
+                ),
+            ]);
+
+            throw new \RuntimeException($this->motorVerificationUnavailableMessage());
         }
 
         $header = $xml->MotorVerificationRes->VerificationHdr ?? null;
@@ -129,7 +156,7 @@ class SuretechService
 
         if (!$header || !$detail) {
             Log::error('Unexpected TIRA XML structure from Suretech.', ['xml' => $xmlString]);
-            throw new \RuntimeException('Unexpected vehicle verification response format.');
+            throw new \RuntimeException($this->motorVerificationUnavailableMessage());
         }
 
         $statusDesc = (string) $header->ResponseStatusDesc;
@@ -158,6 +185,22 @@ class SuretechService
             'motor_usage'         => (string) $detail->MotorUsage,
             'owner_category'      => (string) $detail->OwnerCategory,
         ];
+    }
+
+    protected function normalizeTiraXml(string $xmlString): string
+    {
+        $xmlString = trim(preg_replace('/^\xEF\xBB\xBF/', '', $xmlString));
+
+        if (str_starts_with($xmlString, '&lt;')) {
+            $xmlString = html_entity_decode($xmlString, ENT_QUOTES | ENT_XML1, 'UTF-8');
+        }
+
+        return trim($xmlString);
+    }
+
+    protected function motorVerificationUnavailableMessage(): string
+    {
+        return 'Vehicle verification is temporarily unavailable. Please try again later.';
     }
 
     /**
