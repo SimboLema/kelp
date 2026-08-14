@@ -81,7 +81,14 @@ Route::prefix('v1')->group(function () {
         Route::get('ipf/accounts', [InsuranceOrderController::class, 'myIpfAccounts']);
         Route::get('orders/{order}/ipf-account', [InsuranceOrderController::class, 'ipfAccount']);
         Route::post('orders/{order}/ipf-payments', [InsuranceOrderController::class, 'recordIpfPayment']);
-        
+
+
+        //redemption points
+        Route::get('/points/balance', [PointsController::class, 'balance']);
+        Route::get('/points/history', [PointsController::class, 'history']);
+        Route::post('/points/redeem', [PointsController::class, 'redeem']);
+        Route::post('/referrals/apply', [ReferralController::class, 'apply']);
+
         //initiate payment
         Route::post(
             '/payments/initiate',
@@ -104,3 +111,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/businesses', [KelpAppController::class, 'businesses']);
     Route::get('/businesses/{business}', [KelpAppController::class, 'businessDetails']);
 });
+
+//user wa kelp kupara covernote
+
+Route::post('/kelp/covernote-callback', [\App\Http\Controllers\Api\V1\KelpApp\CoverNoteCallbackController::class, 'store']);

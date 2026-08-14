@@ -401,6 +401,7 @@ class InsuranceOrderController extends Controller
             'created_at'            => $order->created_at,
         ]);
         $order->update(['transmission_status' => 'Sent']);
+        app(\App\Services\PointsService::class)->awardForPurchase($order->fresh());
     } catch (\RuntimeException $e) {
         $order->update(['transmission_status' => 'Failed']);
         // Order and IPF account stay saved locally regardless — Kelp never loses
