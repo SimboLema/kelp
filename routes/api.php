@@ -10,6 +10,8 @@ use App\Http\Controllers\Agent\AgentRegisterController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAuthController;
 use App\Http\Controllers\Api\V1\KelpApp\InsuranceOrderController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpAppController;
+use App\Http\Controllers\Api\V1\KelpApp\PointsController;
+use App\Http\Controllers\Api\V1\KelpApp\ReferralController;
 use App\Http\Controllers\Api\V1\KelpApp\KelpFavouriteController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
 use App\Http\Controllers\User\UserCategoriesController;
