@@ -11,8 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Drop the existing points_settings table first
-        Schema::dropIfExists('points_settings');
+        
 
         // Then create points_transactions
         Schema::create('points_transactions', function (Blueprint $table) {
