@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\InsuranceOrder;
 use Illuminate\Http\Request;
+use App\Models\InsuranceOrder;
 
 class InsuranceOrderController extends Controller
 {
+    /**
+     * Display all insurance orders.
+     */
     public function index(Request $request)
     {
         $query = InsuranceOrder::with([
@@ -24,12 +27,14 @@ class InsuranceOrderController extends Controller
             $search = $request->search;
 
             $query->where(function ($q) use ($search) {
+
                 $q->where('reference_no', 'like', "%{$search}%")
                     ->orWhere('registration_number', 'like', "%{$search}%")
                     ->orWhere('cover_note_reference', 'like', "%{$search}%")
                     ->orWhere('external_reference', 'like', "%{$search}%")
                     ->orWhere('insurer_name', 'like', "%{$search}%")
                     ->orWhere('product_name', 'like', "%{$search}%")
+
                     ->orWhereHas('user', function ($userQuery) use ($search) {
                         $userQuery->where('name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%")
@@ -38,17 +43,17 @@ class InsuranceOrderController extends Controller
             });
         }
 
-        // Filter by status
+        // Status filter
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter by payment mode
+        // Payment mode filter
         if ($request->filled('payment_mode')) {
             $query->where('payment_mode', $request->payment_mode);
         }
 
-        // Filter by transmission status
+        // Transmission status filter
         if ($request->filled('transmission_status')) {
             $query->where(
                 'transmission_status',
@@ -56,7 +61,7 @@ class InsuranceOrderController extends Controller
             );
         }
 
-        // Date filter
+        // Date filters
         if ($request->filled('date_from')) {
             $query->whereDate('created_at', '>=', $request->date_from);
         }
@@ -70,16 +75,25 @@ class InsuranceOrderController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        // Dashboard statistics
+        // Statistics
         $totalOrders = InsuranceOrder::count();
 
         $totalPremium = InsuranceOrder::sum('premium');
 
-        $pendingOrders = InsuranceOrder::where('status', 'pending')->count();
+        $pendingOrders = InsuranceOrder::where(
+            'status',
+            'pending'
+        )->count();
 
-        $completedOrders = InsuranceOrder::where('status', 'completed')->count();
+        $completedOrders = InsuranceOrder::where(
+            'status',
+            'completed'
+        )->count();
 
-        $ipfOrders = InsuranceOrder::where('payment_mode', 'ipf')->count();
+        $ipfOrders = InsuranceOrder::where(
+            'payment_mode',
+            'ipf'
+        )->count();
 
         return view('admin.insurance_orders.index', compact(
             'orders',
@@ -89,5 +103,26 @@ class InsuranceOrderController extends Controller
             'completedOrders',
             'ipfOrders'
         ));
+    }
+
+
+    /**
+     * Display a single insurance order.
+     */
+    public function show($id)
+    {
+        $order = InsuranceOrder::with([
+            'user',
+            'insurer',
+            'insurance',
+            'product',
+            'coverage',
+            'ipfAccount',
+        ])->findOrFail($id);
+
+        return view(
+            'admin.insurance_orders.show',
+            compact('order')
+        );
     }
 }
