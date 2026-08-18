@@ -11,14 +11,32 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Drop the existing points_settings table first
+        Schema::dropIfExists('points_settings');
+
+        // Then create points_transactions
         Schema::create('points_transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
-            $table->enum('type', ['purchase', 'referral', 'redemption', 'redemption_refund', 'adjustment']);
+
+            $table->foreignUuid('user_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->enum('type', [
+                'purchase',
+                'referral',
+                'redemption',
+                'redemption_refund',
+                'adjustment'
+            ]);
+
             $table->integer('points'); // positive = earned, negative = spent
             $table->integer('balance_after');
-            $table->nullableMorphs('reference'); // links to InsuranceOrder, RedemptionRequest, etc.
+
+            $table->nullableMorphs('reference');
+
             $table->text('note')->nullable();
+
             $table->timestamps();
         });
     }
