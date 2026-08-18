@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('points_transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
             $table->enum('type', ['purchase', 'referral', 'redemption', 'redemption_refund', 'adjustment']);
             $table->integer('points'); // positive = earned, negative = spent
             $table->integer('balance_after');
