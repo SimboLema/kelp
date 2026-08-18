@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminLoginController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminAgentController;
+use App\Http\Controllers\Admin\InsuranceOrderController;
 use App\Http\Controllers\Admin\BusinessOwner\BusinessesController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerDashboardController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerLoginController;
@@ -34,9 +35,14 @@ Route::get('/user/business/{business}', [UserCategoriesController::class, 'detai
 
 Route::post('/business/{id}/review', [UserCategoriesController::class, 'storeReview'])->name('reviews.store');
 
+Route::get('/admin/insurance-orders', [InsuranceOrderController::class, 'index'])->name('admin.insurance-orders.index');
+
+    // Detail view page
+    Route::get('/admin/insurance-orders/{insuranceOrder}', [InsuranceOrderController::class, 'show'])->name('admin.insurance-orders.show');
+
 //Admin routes kwa ajili ya ipf
 Route::prefix('admin/ipf')->name('admin.ipf.')->group(function () {
- 
+
     // Plans
     Route::get('plans', [IpfPlanWebController::class, 'index'])->name('plans.index');
     Route::get('plans/create', [IpfPlanWebController::class, 'create'])->name('plans.create');
@@ -44,14 +50,17 @@ Route::prefix('admin/ipf')->name('admin.ipf.')->group(function () {
     Route::get('plans/{plan}/edit', [IpfPlanWebController::class, 'edit'])->name('plans.edit');
     Route::put('plans/{plan}', [IpfPlanWebController::class, 'update'])->name('plans.update');
     Route::delete('plans/{plan}', [IpfPlanWebController::class, 'destroy'])->name('plans.destroy');
- 
+
     // Accounts
     Route::get('accounts', [IpfAccountWebController::class, 'index'])->name('accounts.index');
     Route::get('accounts/{account}', [IpfAccountWebController::class, 'show'])->name('accounts.show');
     Route::post('accounts/{account}/mark-overdue', [IpfAccountWebController::class, 'markOverdue'])->name('accounts.mark-overdue');
- 
+
     // Report
     Route::get('report', [IpfAccountWebController::class, 'report'])->name('report');
+
+
+
 });
 
 

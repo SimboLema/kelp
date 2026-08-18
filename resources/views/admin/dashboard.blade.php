@@ -24,6 +24,8 @@
     </script>
     <!-- Alpine.js for interactive sidebar & dropdowns -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 antialiased" x-data="{ sidebarOpen: false }">
 
@@ -37,7 +39,6 @@
             <!-- Logo Header -->
             <div class="h-16 flex items-center px-6 border-b border-slate-100 justify-between">
                 <div class="flex items-center gap-3">
-                    <!-- Logo -->
                     <img src="{{ asset('assets/images/logo.png') }}" alt="Logo" class="h-12 w-auto object-contain">
                 </div>
                 <button @click="sidebarOpen = false" class="md:hidden text-slate-400 hover:text-slate-600">
@@ -49,13 +50,11 @@
             <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                 <p class="px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Main Menu</p>
 
-                <!-- Active Link -->
                 <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-brand-50 text-brand-600 font-medium transition-all">
                     <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 00-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
                     Dashboard
                 </a>
 
-                <!-- Standard Links -->
                 <a href="{{ route('admin.agents') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium transition-all">
                     <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                     Agents
@@ -69,6 +68,11 @@
                 <a href="{{ route('admin.categories') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium transition-all">
                     <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                     Business Categories
+                </a>
+
+                <a href="{{ route('admin.insurance-orders.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium transition-all">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    Insurance Orders
                 </a>
 
                 <a href="{{ route('admin.ipf.plans.index') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium transition-all">
@@ -252,13 +256,128 @@
 
                 </div>
 
+                <!-- CHARTS SECTION -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    <!-- Line/Area Chart: Orders Trend -->
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-800">Insurance Orders Overview</h3>
+                                <p class="text-xs text-slate-400">Monthly breakdown of orders processed</p>
+                            </div>
+                            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">+12.5% vs last month</span>
+                        </div>
+                        <div class="h-72">
+                            <canvas id="ordersTrendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Donut/Pie Chart: Status Distribution -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-800">Order Status Breakdown</h3>
+                            <p class="text-xs text-slate-400">Distribution of active vs completed orders</p>
+                        </div>
+                        <div class="h-60 relative my-auto flex items-center justify-center">
+                            <canvas id="orderStatusChart"></canvas>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2 text-center border-t border-slate-100 pt-3 mt-2">
+                            <div>
+                                <span class="block text-xs text-slate-400">Active</span>
+                                <span class="font-bold text-slate-700 text-sm">62%</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-slate-400">Pending</span>
+                                <span class="font-bold text-slate-700 text-sm">23%</span>
+                            </div>
+                            <div>
+                                <span class="block text-xs text-slate-400">Completed</span>
+                                <span class="font-bold text-slate-700 text-sm">15%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
                 <!-- TABLE SECTION -->
-                
 
             </main>
         </div>
 
     </div>
+
+    <!-- Chart.js Configurations -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 1. Orders Trend Line Chart
+            const ctxTrend = document.getElementById('ordersTrendChart').getContext('2d');
+
+            const gradient = ctxTrend.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(249, 115, 22, 0.35)');
+            gradient.addColorStop(1, 'rgba(249, 115, 22, 0.0)');
+
+            new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Orders',
+                        data: [65, 78, 90, 115, 140, 125, 160, 185, 210, 195, 230, 260],
+                        borderColor: '#f97316',
+                        borderWidth: 3,
+                        backgroundColor: gradient,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#ea580c',
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false }
+                        },
+                        y: {
+                            grid: { color: '#f1f5f9' },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // 2. Order Status Donut Chart
+            const ctxStatus = document.getElementById('orderStatusChart').getContext('2d');
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Active', 'Pending', 'Completed'],
+                    datasets: [{
+                        data: [62, 23, 15],
+                        backgroundColor: ['#f97316', '#fbbf24', '#3b82f6'],
+                        hoverOffset: 4,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { boxWidth: 12, padding: 15 }
+                        }
+                    },
+                    cutout: '75%'
+                }
+            });
+        });
+    </script>
 
 </body>
 </html>
