@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('referral_code')->nullable()->unique()->after('id');
+          //  $table->string('referral_code')->nullable()->unique()->after('id');
             $table->foreignUuid('referred_by_user_id')->nullable()->constrained('users')->nullOnDelete();
         });
     }
