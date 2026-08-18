@@ -6,24 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignUuid('users')->constrained()->cascadeOnDelete();
-            $table->string('referral_code');
+            $table->uuid('referrer_id')->nullable()->after('id');
+            $table->string('referral_code')->nullable()->unique()->after('referrer_id');
+        });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('referrer_id')
+                ->references('id')
+                ->on('users')
+                ->nullOnDelete();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            $table->dropForeign(['referrer_id']);
+            $table->dropColumn(['referrer_id', 'referral_code']);
         });
     }
 };
