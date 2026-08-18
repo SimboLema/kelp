@@ -152,7 +152,7 @@
                         <th class="px-5 py-3.5 text-center font-bold">Payment Mode</th>
                         <th class="px-5 py-3.5 text-left font-bold">Status</th>
                         <th class="px-5 py-3.5 text-left font-bold">Date</th>
-                        <th class="px-5 py-3.5 text-right font-bold">Actions</th>
+
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -172,7 +172,7 @@
 
                             <!-- Cover & Company -->
                             <td class="px-5 py-4 text-slate-700">
-                                <div class="font-medium text-slate-800">{{ $order->coverType->name ?? '—' }}</div>
+                                <div class="font-medium text-slate-800">{{ $order->product_name ?? '—' }}</div>
                                 <div class="text-slate-400 text-xs">{{ $order->insurer_name ?? '—' }}</div>
                             </td>
 
@@ -206,16 +206,6 @@
                                 {{ $order->created_at ? $order->created_at->format('M d, Y') : '—' }}
                             </td>
 
-                            <!-- Actions -->
-                            <td class="px-5 py-4 text-right whitespace-nowrap">
-                                <a href="{{ route('admin.insurance-orders.show', $order->id) }}"
-                                   class="inline-flex items-center gap-1 text-xs font-bold text-brand-600 hover:text-brand-500 hover:underline">
-                                    <span>View</span>
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                    </svg>
-                                </a>
-                            </td>
                         </tr>
                     @empty
                         <tr>
