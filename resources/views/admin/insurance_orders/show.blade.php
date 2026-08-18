@@ -248,7 +248,7 @@
                                 </div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-slate-400">Phone</span>
-                                    <span class="font-semibold text-slate-700">{{ $order->user?->phone ?? 'N/A' }}</span>
+                                    <span class="font-semibold text-slate-700">{{ $order->user?->phone_number ?? 'N/A' }}</span>
                                 </div>
                             </div>
                         </div>

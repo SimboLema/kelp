@@ -173,12 +173,12 @@
                             <!-- Cover & Company -->
                             <td class="px-5 py-4 text-slate-700">
                                 <div class="font-medium text-slate-800">{{ $order->coverType->name ?? '—' }}</div>
-                                <div class="text-slate-400 text-xs">{{ $order->insuranceCompany->name ?? '—' }}</div>
+                                <div class="text-slate-400 text-xs">{{ $order->insurer_name ?? '—' }}</div>
                             </td>
 
                             <!-- Premium Amount -->
                             <td class="px-5 py-4 text-right font-semibold text-slate-800">
-                                TZS {{ number_format($order->premium_amount ?? 0, 2) }}
+                                TZS {{ number_format($order->premium ?? 0, 2) }}
                             </td>
 
                             <!-- Payment Mode Badge -->
@@ -189,7 +189,7 @@
                                     </span>
                                 @else
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                                        Upfront
+                                        Cash
                                     </span>
                                 @endif
                             </td>
