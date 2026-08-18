@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedInteger('referral_points');          // flat points when a referred user's first purchase completes
             $table->decimal('redemption_rate_tzs_per_point', 10, 2); // cash value of 1 point
             $table->unsignedInteger('min_redeemable_points')->default(0);
-            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignUuid('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
         });
     }
