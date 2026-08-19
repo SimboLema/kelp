@@ -394,6 +394,10 @@ class InsuranceOrderController extends Controller
             'ipf_plan_id'           => $request->payment_mode === 'ipf'
                 ? $request->ipf_plan_id
                 : null,
+            'ipf' => $request->payment_mode === 'ipf' && $ipfAccount ? [
+        'down_payment'    => $ipfAccount->down_payment_amount,
+        'financed_amount' => $ipfAccount->financed_amount,
+     ]    : null,
             'insurance'             => $request->insurance_name,
             'product'               => $request->product_name,
             'coverage'              => $request->coverage_name,
