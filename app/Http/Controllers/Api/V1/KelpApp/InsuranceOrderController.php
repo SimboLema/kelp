@@ -214,6 +214,8 @@ class InsuranceOrderController extends Controller
         'ipf_plan_id'  => 'required_if:payment_mode,ipf|integer|exists:ipf_plans,id',
 
         'insurer_id'      => 'required|integer',
+        'insurance_id'    => 'nullable|integer',
+        'product_id'      => 'nullable|integer',
         'insurer_name'    => 'nullable|string|max:255',
         'insurance_name'  => 'nullable|string|max:255',
         'product_name'    => 'nullable|string|max:255',
@@ -221,15 +223,28 @@ class InsuranceOrderController extends Controller
         'addon_ids'       => 'nullable|array',
     ]);
 
-    // 1. Verify vehicle against TIRA (never trust client-cached data)
-    try {
-        $vehicle = $this->suretech->verifyMotor([
-            'motor_category' => $request->motor_category,
-            'motor_registration_number' => $request->registration_number,
-            'motor_chassis_number' => $request->chassis_number,
+    $isMotorInsurance = $this->isMotorInsurance($request);
+    $vehicle = null;
+
+    // 1. Verify vehicle against TIRA only for motor insurance.
+    if ($isMotorInsurance) {
+        $request->validate([
+            'motor_category'       => 'required|in:1,2',
+            'registration_number'  => 'required|string',
+            'motor_usage_id'       => 'required|integer',
+            'owner_category_id'    => 'required|integer',
+            'motor_type_id'        => 'required|integer',
         ]);
-    } catch (\RuntimeException $e) {
-        return response()->json(['success' => false, 'message' => 'Vehicle verification failed: ' . $e->getMessage()], 502);
+
+        try {
+            $vehicle = $this->suretech->verifyMotor([
+                'motor_category' => $request->motor_category,
+                'motor_registration_number' => $request->registration_number,
+                'motor_chassis_number' => $request->chassis_number,
+            ]);
+        } catch (\RuntimeException $e) {
+            return response()->json(['success' => false, 'message' => 'Vehicle verification failed: ' . $e->getMessage()], 502);
+        }
     }
 
     // 2. Calculate premium
@@ -240,14 +255,19 @@ class InsuranceOrderController extends Controller
     // modified here, that failure will surface as a 502 below until it's fixed
     // on that side — this is not something Kelp can work around.
     try {
-        $premiumResult = $this->suretech->calculatePremium([
+        $premiumPayload = [
             'coverage_id'            => $request->coverage_id,
             'sum_insured'            => $request->sum_insured,
             'cover_note_duration_id' => $request->cover_note_duration_id,
-            'motor_usage_id'         => $request->motor_usage_id,
-            'sitting_capacity'       => $request->sitting_capacity,
             'addon_ids'              => $request->addon_ids ?? [],
-        ]);
+        ];
+
+        if ($isMotorInsurance) {
+            $premiumPayload['motor_usage_id'] = $request->motor_usage_id;
+            $premiumPayload['sitting_capacity'] = $request->sitting_capacity;
+        }
+
+        $premiumResult = $this->suretech->calculatePremium($premiumPayload);
         $totalPremium = $premiumResult['total_premium_including_tax'];
     } catch (\RuntimeException $e) {
         return response()->json(['success' => false, 'message' => 'Premium calculation failed: ' . $e->getMessage()], 502);
@@ -268,11 +288,11 @@ class InsuranceOrderController extends Controller
         'premium'             => $totalPremium,
         'premium_breakdown'   => json_encode($premiumResult),
         'customer_details'    => json_encode($request->input('customer')),
-        'motor_details'       => json_encode($vehicle),
+        'motor_details'       => $vehicle ? json_encode($vehicle) : null,
         'cover_note_start_date' => $request->cover_note_start_date,
         'cover_note_end_date'   => $request->cover_note_end_date,
         'payment_mode'        => $request->payment_mode,
-        'registration_number' => $vehicle['registration_number'],
+        'registration_number' => $vehicle['registration_number'] ?? null,
         'status'              => 'Pending',
         'transmission_status' => 'Pending',
     ]);
@@ -325,10 +345,12 @@ class InsuranceOrderController extends Controller
     $descriptionParts[] = "Street: {$request->input('customer.street')}";
     $descriptionParts[] = "Postal Address: {$request->input('customer.postal_address')}";
 
-    $descriptionParts[] = "--- Vehicle ---";
-    $descriptionParts[] = "Reg No: {$vehicle['registration_number']}, Chassis: {$vehicle['chassis_number']}";
-    $descriptionParts[] = "{$vehicle['make']} {$vehicle['model']} ({$vehicle['year_of_manufacture']}), {$vehicle['color']}, {$vehicle['body_type']}";
-    $descriptionParts[] = "Engine: {$vehicle['engine_number']} ({$vehicle['engine_capacity']}cc, {$vehicle['fuel_used']})";
+    if ($vehicle) {
+        $descriptionParts[] = "--- Vehicle ---";
+        $descriptionParts[] = "Reg No: {$vehicle['registration_number']}, Chassis: {$vehicle['chassis_number']}";
+        $descriptionParts[] = "{$vehicle['make']} {$vehicle['model']} ({$vehicle['year_of_manufacture']}), {$vehicle['color']}, {$vehicle['body_type']}";
+        $descriptionParts[] = "Engine: {$vehicle['engine_number']} ({$vehicle['engine_capacity']}cc, {$vehicle['fuel_used']})";
+    }
 
     $fullDescription = implode("\n", $descriptionParts);
 
@@ -341,7 +363,7 @@ class InsuranceOrderController extends Controller
             $request->cover_note_end_date
         )->startOfDay()->format('Y-m-d H:i:s');
 
-        $this->suretech->submitOrder([
+        $submitPayload = [
             'reference_no' => $order->reference_no,
             'insurer_id'   => $request->insurer_id,
             'customer' => [
@@ -360,7 +382,27 @@ class InsuranceOrderController extends Controller
                 'postal_address'        => $request->input('customer.postal_address'),
                 'fax'                   => $request->input('customer.fax'),
             ],
-            'motor' => [
+            'coverage_id'           => $request->coverage_id,
+            'sum_insured'           => $request->sum_insured,
+            'cover_note_start_date' => $suretechCoverNoteStartDate,
+            'cover_note_end_date'   => $suretechCoverNoteEndDate,
+            'payment_mode'          => $request->payment_mode,
+            'ipf_plan_id'           => $request->payment_mode === 'ipf'
+                ? $request->ipf_plan_id
+                : null,
+            'ipf' => $request->payment_mode === 'ipf' && $ipfAccount ? [
+        'down_payment'    => $ipfAccount->down_payment_amount,
+        'financed_amount' => $ipfAccount->financed_amount,
+     ]    : null,
+            'insurance'             => $request->insurance_name,
+            'product'               => $request->product_name,
+            'coverage'              => $request->coverage_name,
+            'description'           => $fullDescription,
+            'created_at'            => $order->created_at,
+        ];
+
+        if ($vehicle) {
+            $submitPayload['motor'] = [
                 'registration_number' => $vehicle['registration_number'],
                 'chassis_number'      => $vehicle['chassis_number'],
                 'make'                => $vehicle['make'],
@@ -385,25 +427,10 @@ class InsuranceOrderController extends Controller
                 'owner_category'      => $vehicle['owner_category'],
                 'motor_category_id'   => $request->motor_category,
                 'motor_type_id'       => $request->motor_type_id,
-            ],
-            'coverage_id'           => $request->coverage_id,
-            'sum_insured'           => $request->sum_insured,
-            'cover_note_start_date' => $suretechCoverNoteStartDate,
-            'cover_note_end_date'   => $suretechCoverNoteEndDate,
-            'payment_mode'          => $request->payment_mode,
-            'ipf_plan_id'           => $request->payment_mode === 'ipf'
-                ? $request->ipf_plan_id
-                : null,
-            'ipf' => $request->payment_mode === 'ipf' && $ipfAccount ? [
-        'down_payment'    => $ipfAccount->down_payment_amount,
-        'financed_amount' => $ipfAccount->financed_amount,
-     ]    : null,
-            'insurance'             => $request->insurance_name,
-            'product'               => $request->product_name,
-            'coverage'              => $request->coverage_name,
-            'description'           => $fullDescription,
-            'created_at'            => $order->created_at,
-        ]);
+            ];
+        }
+
+        $this->suretech->submitOrder($submitPayload);
         $order->update(['transmission_status' => 'Sent']);
         app(\App\Services\PointsService::class)->awardForPurchase($order->fresh());
     } catch (\RuntimeException $e) {
@@ -422,6 +449,22 @@ class InsuranceOrderController extends Controller
         ],
     ], 201);
 }
+
+    private function isMotorInsurance(Request $request): bool
+    {
+        if ((int) $request->input('insurance_id') === 1) {
+            return true;
+        }
+
+        $insuranceText = strtolower(implode(' ', [
+            (string) $request->input('insurance_name', ''),
+            (string) $request->input('product_name', ''),
+            (string) $request->input('coverage_name', ''),
+        ]));
+
+        return str_contains($insuranceText, 'motor') ||
+            str_contains($insuranceText, 'vehicle');
+    }
 
     public function verifyMotor(Request $request)
     {
