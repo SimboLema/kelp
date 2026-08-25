@@ -202,12 +202,12 @@ class InsuranceOrderController extends Controller
         'customer.postal_address'        => 'nullable|string',
         'customer.fax'                   => 'nullable|string',
 
-        'motor_category'       => 'required|in:1,2',
-        'registration_number'  => 'required|string',
+        'motor_category'       => 'nullable|in:1,2',
+        'registration_number'  => 'nullable|string',
         'chassis_number'       => 'nullable|string',
-        'motor_usage_id'       => 'required|integer',
-        'owner_category_id'    => 'required|integer',
-        'motor_type_id'        => 'required|integer',
+        'motor_usage_id'       => 'nullable|integer',
+        'owner_category_id'    => 'nullable|integer',
+        'motor_type_id'        => 'nullable|integer',
         'sitting_capacity'     => 'nullable|integer',
 
         'payment_mode' => 'required|in:cash,ipf',
