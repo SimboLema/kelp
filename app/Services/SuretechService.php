@@ -12,13 +12,15 @@ class SuretechService
 
     public function __construct()
     {
-        $this->baseUrl = rtrim(env('SURETECH_URL'), '/');
-        $this->secret  = env('SURETECH_SECRET');
+        $this->baseUrl = rtrim((string) config('services.suretech.base_url'), '/');
+        $this->secret  = (string) config('services.suretech.secret');
     }
 
     protected function client()
     {
-        return Http::timeout(20)
+        return Http::acceptJson()
+            ->asJson()
+            ->timeout(20)
             ->withHeaders([
                 'X-Kelp-Secret' => $this->secret,
                 'Accept' => 'application/json',

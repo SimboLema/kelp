@@ -49,4 +49,9 @@ return [
         ),
     ],
 
+    'suretech' => [
+        'base_url' => env('SURETECH_URL'),
+        'secret' => env('SURETECH_SECRET'),
+    ],
+
 ];
