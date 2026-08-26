@@ -190,6 +190,9 @@ class InsuranceOrderController extends Controller
         'cover_note_start_date'   => 'required|date',
         'cover_note_end_date'     => 'required|date|after:cover_note_start_date',
 
+        'customer.name'                   => 'nullable|string|max:255',
+        'customer.phone'                  => 'nullable|string|max:50',
+        'customer.email'                  => 'nullable|email|max:255',
         'customer.dob'                   => 'required|date',
         'customer.policy_holder_type_id' => 'required|integer',
         'customer.id_number'             => 'required|string',
@@ -320,6 +323,11 @@ class InsuranceOrderController extends Controller
 
     // 5. Transmit to Suretech using the nested structure expected by its
     // IncomingInsuranceOrderController.
+    $user = Auth::user();
+    $customerName = $request->input('customer.name') ?: $user?->name;
+    $customerPhone = $request->input('customer.phone') ?: $user?->phone_number;
+    $customerEmail = $request->input('customer.email') ?: $user?->email;
+
     $descriptionParts = [
         "Order Reference: {$order->reference_no}",
         "Payment Mode: " . strtoupper($request->payment_mode),
@@ -357,7 +365,6 @@ class InsuranceOrderController extends Controller
 
     $fullDescription = implode("\n", $descriptionParts);
 
-    $user = Auth::user();
     $suretechCoverNoteStartDate = Carbon::parse(
         $request->cover_note_start_date
     )->startOfDay()->format('Y-m-d H:i:s');
@@ -369,7 +376,7 @@ class InsuranceOrderController extends Controller
         'reference_no' => $order->reference_no,
         'insurer_id'   => $request->insurer_id,
         'customer' => [
-            'name'                  => $user?->name,
+            'name'                  => $customerName,
             'dob'                   => $request->input('customer.dob'),
             'policy_holder_type_id' => $request->input('customer.policy_holder_type_id'),
             'id_number'             => $request->input('customer.id_number'),
@@ -378,8 +385,8 @@ class InsuranceOrderController extends Controller
             'country_id'            => $request->input('customer.country_id'),
             'region_id'             => $request->input('customer.region_id'),
             'district_id'           => $request->input('customer.district_id'),
-            'phone'                 => $user?->phone_number,
-            'email'                 => $user?->email,
+            'phone'                 => $customerPhone,
+            'email'                 => $customerEmail,
             'street'                => $request->input('customer.street'),
             'postal_address'        => $request->input('customer.postal_address'),
             'fax'                   => $request->input('customer.fax'),
