@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminLoginController;
 use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminAgentController;
+use App\Http\Controllers\Admin\AdminUserController;
 use App\Http\Controllers\Admin\InsuranceOrderController;
 use App\Http\Controllers\Admin\BusinessOwner\BusinessesController;
 use App\Http\Controllers\BusinessOwner\BusinessOwnerDashboardController;
@@ -30,10 +31,15 @@ Route::get('/admin/categories', [AdminCategoryController::class,'index'])->name(
 Route::get('/admin/agents',[AdminAgentController::class,'index'])->name('admin.agents');
 Route::post('/admin/agent/create',[AdminAgentController::class,'create'])->name('admin.agents.create');
 
+Route::get('/admin/users/index', [AdminUserController::class, 'index'])->name('admin.users.index');
+Route::post('/admin/users', [AdminUserController::class, 'store'])->name('admin.users.store');
+
 Route::get('/user/categories/{id}', [UserCategoriesController::class,'show'])->name('categories.show');
 Route::get('/user/business/{business}', [UserCategoriesController::class, 'details'])->name('details.show');
 
 Route::post('/business/{id}/review', [UserCategoriesController::class, 'storeReview'])->name('reviews.store');
+
+
 
 Route::get('/admin/insurance-orders', [InsuranceOrderController::class, 'index'])->name('admin.insurance-orders.index');
 
