@@ -279,6 +279,9 @@ class InsuranceOrderController extends Controller
     $order = InsuranceOrder::create([
         'reference_no'        => InsuranceOrder::generateReference(),
         'user_id'             => Auth::id(),
+        'insurer_id'          => $request->insurer_id,
+        'insurance_id'        => $request->insurance_id,
+        'product_id'          => $request->product_id,
         'coverage_id'         => $request->coverage_id,
         'insurer_name'        => $request->insurer_name,
         'insurance_name'      => $request->insurance_name,
@@ -354,101 +357,182 @@ class InsuranceOrderController extends Controller
 
     $fullDescription = implode("\n", $descriptionParts);
 
-    try {
-        $user = Auth::user();
-        $suretechCoverNoteStartDate = Carbon::parse(
-            $request->cover_note_start_date
-        )->startOfDay()->format('Y-m-d H:i:s');
-        $suretechCoverNoteEndDate = Carbon::parse(
-            $request->cover_note_end_date
-        )->startOfDay()->format('Y-m-d H:i:s');
+    $user = Auth::user();
+    $suretechCoverNoteStartDate = Carbon::parse(
+        $request->cover_note_start_date
+    )->startOfDay()->format('Y-m-d H:i:s');
+    $suretechCoverNoteEndDate = Carbon::parse(
+        $request->cover_note_end_date
+    )->startOfDay()->format('Y-m-d H:i:s');
 
-        $submitPayload = [
-            'reference_no' => $order->reference_no,
-            'insurer_id'   => $request->insurer_id,
-            'customer' => [
-                'name'                  => $user?->name,
-                'dob'                   => $request->input('customer.dob'),
-                'policy_holder_type_id' => $request->input('customer.policy_holder_type_id'),
-                'id_number'             => $request->input('customer.id_number'),
-                'id_type_id'            => $request->input('customer.id_type_id'),
-                'gender'                => $request->input('customer.gender'),
-                'country_id'            => $request->input('customer.country_id'),
-                'region_id'             => $request->input('customer.region_id'),
-                'district_id'           => $request->input('customer.district_id'),
-                'phone'                 => $user?->phone_number,
-                'email'                 => $user?->email,
-                'street'                => $request->input('customer.street'),
-                'postal_address'        => $request->input('customer.postal_address'),
-                'fax'                   => $request->input('customer.fax'),
-            ],
-            'coverage_id'           => $request->coverage_id,
-            'sum_insured'           => $request->sum_insured,
-            'cover_note_start_date' => $suretechCoverNoteStartDate,
-            'cover_note_end_date'   => $suretechCoverNoteEndDate,
-            'payment_mode'          => $request->payment_mode,
-            'ipf_plan_id'           => $request->payment_mode === 'ipf'
-                ? $request->ipf_plan_id
-                : null,
-            'ipf' => $request->payment_mode === 'ipf' && $ipfAccount ? [
-        'down_payment'    => $ipfAccount->down_payment_amount,
-        'financed_amount' => $ipfAccount->financed_amount,
-     ]    : null,
-            'insurance'             => $request->insurance_name,
-            'product'               => $request->product_name,
-            'coverage'              => $request->coverage_name,
-            'description'           => $fullDescription,
-            'created_at'            => $order->created_at,
+    $submitPayload = [
+        'reference_no' => $order->reference_no,
+        'insurer_id'   => $request->insurer_id,
+        'customer' => [
+            'name'                  => $user?->name,
+            'dob'                   => $request->input('customer.dob'),
+            'policy_holder_type_id' => $request->input('customer.policy_holder_type_id'),
+            'id_number'             => $request->input('customer.id_number'),
+            'id_type_id'            => $request->input('customer.id_type_id'),
+            'gender'                => $request->input('customer.gender'),
+            'country_id'            => $request->input('customer.country_id'),
+            'region_id'             => $request->input('customer.region_id'),
+            'district_id'           => $request->input('customer.district_id'),
+            'phone'                 => $user?->phone_number,
+            'email'                 => $user?->email,
+            'street'                => $request->input('customer.street'),
+            'postal_address'        => $request->input('customer.postal_address'),
+            'fax'                   => $request->input('customer.fax'),
+        ],
+        'coverage_id'           => $request->coverage_id,
+        'sum_insured'           => $request->sum_insured,
+        'cover_note_start_date' => $suretechCoverNoteStartDate,
+        'cover_note_end_date'   => $suretechCoverNoteEndDate,
+        'payment_mode'          => $request->payment_mode,
+        'ipf_plan_id'           => $request->payment_mode === 'ipf'
+            ? $request->ipf_plan_id
+            : null,
+        'ipf' => $request->payment_mode === 'ipf' && $ipfAccount ? [
+            'down_payment'    => $ipfAccount->down_payment_amount,
+            'financed_amount' => $ipfAccount->financed_amount,
+        ] : null,
+        'insurance'             => $request->insurance_name,
+        'product'               => $request->product_name,
+        'coverage'              => $request->coverage_name,
+        'description'           => $fullDescription,
+        'created_at'            => $order->created_at,
+    ];
+
+    if ($vehicle) {
+        $submitPayload['motor'] = [
+            'registration_number' => $vehicle['registration_number'],
+            'chassis_number'      => $vehicle['chassis_number'],
+            'make'                => $vehicle['make'],
+            'model'               => $vehicle['model'],
+            'model_number'        => $vehicle['model_number'],
+            'body_type'           => $vehicle['body_type'],
+            'color'               => $vehicle['color'],
+            'engine_number'       => $vehicle['engine_number'],
+            'engine_capacity'     => $vehicle['engine_capacity'],
+            'fuel_used'           => $vehicle['fuel_used'],
+            'number_of_axles'     => $vehicle['number_of_axles'],
+            'axle_distance'       => $vehicle['axle_distance'],
+            'sitting_capacity'    => $vehicle['sitting_capacity'],
+            'year_of_manufacture' => $vehicle['year_of_manufacture'],
+            'tare_weight'         => $vehicle['tare_weight'],
+            'gross_weight'        => $vehicle['gross_weight'],
+            // Using the TIRA-verified text values here (not Kelp's local
+            // motor_usage_id/owner_category_id), since Suretech resolves
+            // these by NAME against its own motor_usages/owner_categories
+            // lookup tables, not by Kelp's internal IDs.
+            'motor_usage'         => $vehicle['motor_usage'],
+            'owner_category'      => $vehicle['owner_category'],
+            'motor_category_id'   => $request->motor_category,
+            'motor_type_id'       => $request->motor_type_id,
         ];
-
-        if ($vehicle) {
-            $submitPayload['motor'] = [
-                'registration_number' => $vehicle['registration_number'],
-                'chassis_number'      => $vehicle['chassis_number'],
-                'make'                => $vehicle['make'],
-                'model'               => $vehicle['model'],
-                'model_number'        => $vehicle['model_number'],
-                'body_type'           => $vehicle['body_type'],
-                'color'               => $vehicle['color'],
-                'engine_number'       => $vehicle['engine_number'],
-                'engine_capacity'     => $vehicle['engine_capacity'],
-                'fuel_used'           => $vehicle['fuel_used'],
-                'number_of_axles'     => $vehicle['number_of_axles'],
-                'axle_distance'       => $vehicle['axle_distance'],
-                'sitting_capacity'    => $vehicle['sitting_capacity'],
-                'year_of_manufacture' => $vehicle['year_of_manufacture'],
-                'tare_weight'         => $vehicle['tare_weight'],
-                'gross_weight'        => $vehicle['gross_weight'],
-                // Using the TIRA-verified text values here (not Kelp's local
-                // motor_usage_id/owner_category_id), since Suretech resolves
-                // these by NAME against its own motor_usages/owner_categories
-                // lookup tables, not by Kelp's internal IDs.
-                'motor_usage'         => $vehicle['motor_usage'],
-                'owner_category'      => $vehicle['owner_category'],
-                'motor_category_id'   => $request->motor_category,
-                'motor_type_id'       => $request->motor_type_id,
-            ];
-        }
-
-        $this->suretech->submitOrder($submitPayload);
-        $order->update(['transmission_status' => 'Sent']);
-        app(\App\Services\PointsService::class)->awardForPurchase($order->fresh());
-    } catch (\RuntimeException $e) {
-        $order->update(['transmission_status' => 'Failed']);
-        // Order and IPF account stay saved locally regardless — Kelp never loses
-        // an order over a downstream transmission failure.
     }
+
+    $transmissionSucceeded = $this->transmitOrderToSuretech($order, $submitPayload);
+    $order->refresh();
 
     return response()->json([
         'success' => true,
-        'message' => 'Insurance order submitted successfully.'
-            . ($request->payment_mode === 'ipf' ? ' IPF account created.' : ''),
+        'message' => $transmissionSucceeded
+            ? 'Insurance order submitted successfully.'
+                . ($request->payment_mode === 'ipf' ? ' IPF account created.' : '')
+            : $this->transmissionFailedMessage(),
         'data' => [
             'order'      => $order,
             'ipf_account' => $ipfAccount,
+            'requires_resend' => ! $transmissionSucceeded,
         ],
     ], 201);
 }
+
+    public function resend($id)
+    {
+        $order = InsuranceOrder::query()
+            ->where('user_id', Auth::id())
+            ->findOrFail($id);
+
+        if ($order->transmission_status === 'Sent') {
+            return response()->json([
+                'success' => true,
+                'message' => 'Order already sent to insurer.',
+                'data' => ['order' => $order],
+            ]);
+        }
+
+        $payload = $order->request_payload;
+
+        if (! is_array($payload) || empty($payload)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This paid order cannot be resent automatically. Please contact support.',
+                'data' => ['order' => $order],
+            ], 422);
+        }
+
+        $payload['reference_no'] = $order->reference_no;
+
+        $transmissionSucceeded = $this->transmitOrderToSuretech($order, $payload);
+        $order->refresh();
+
+        return response()->json([
+            'success' => $transmissionSucceeded,
+            'message' => $transmissionSucceeded
+                ? 'Order resent successfully.'
+                : $this->transmissionFailedMessage(),
+            'data' => [
+                'order' => $order,
+                'requires_resend' => ! $transmissionSucceeded,
+            ],
+        ]);
+    }
+
+    private function transmitOrderToSuretech(InsuranceOrder $order, array $payload): bool
+    {
+        if ($order->transmission_status === 'Sent') {
+            return true;
+        }
+
+        $order->update([
+            'description' => $payload['description'] ?? $order->description,
+            'request_payload' => $payload,
+            'transmission_status' => 'Pending',
+            'last_error' => null,
+        ]);
+
+        try {
+            $responsePayload = $this->suretech->submitOrder($payload);
+
+            $order->update([
+                'status' => 'Submitted',
+                'transmission_status' => 'Sent',
+                'response_payload' => $responsePayload,
+                'sent_at' => now(),
+                'last_error' => null,
+            ]);
+
+            app(\App\Services\PointsService::class)->awardForPurchase($order->fresh());
+
+            return true;
+        } catch (\RuntimeException $e) {
+            $order->update([
+                'status' => 'Processing',
+                'transmission_status' => 'Failed',
+                'retry_count' => ((int) $order->retry_count) + 1,
+                'last_error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    private function transmissionFailedMessage(): string
+    {
+        return 'Payment received. Order saved, but sending to insurer failed. Please resend without making another payment.';
+    }
 
     private function isMotorInsurance(Request $request): bool
     {

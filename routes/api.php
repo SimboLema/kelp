@@ -69,6 +69,7 @@ Route::prefix('v1')->group(function () {
         // Orders — saved locally, then transmitted to Suretech (IncomingInsuranceOrderController)
         Route::post('/insurance-orders', [InsuranceOrderController::class, 'store']);
         Route::get('/insurance-orders', [InsuranceOrderController::class, 'myOrders']);
+        Route::post('/insurance-orders/{id}/resend', [InsuranceOrderController::class, 'resend']);
         Route::get('/insurance-orders/{id}', [InsuranceOrderController::class, 'show']);
 
         // Premium calculation — live call to Suretech (premium-calculate)
